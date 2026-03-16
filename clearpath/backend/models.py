@@ -43,5 +43,5 @@ class AnalysisResponse(BaseModel):
     current_month: int
     recommendations: list[CERecommendation]
     risk_summary: str = Field(..., description="Plain language summary of the department risk profile")
-    causal_chain: Optional[str] = Field(None, description="Identified causal chain e.g. staffing strain → handoff quality → readmissions")
+    causal_chain: Optional[str] = Field(None, description="Identified causal chain e.g. staffing strain -> handoff quality -> readmissions")
     analysis_timestamp: str

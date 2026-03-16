@@ -28,12 +28,43 @@ MONTH_NAMES = {
 
 
 def clean_json_response(raw: str) -> str:
-    """Strip markdown code fences from a model response before JSON parsing."""
-    raw = raw.strip()
-    raw = re.sub(r'^```json\s*', '', raw)
-    raw = re.sub(r'^```\s*', '', raw)
-    raw = re.sub(r'\s*```$', '', raw)
-    return raw.strip()
+    """
+    Extract the first complete JSON object from a model response.
+
+    The model sometimes repeats its output several times, each prefixed with a
+    ```json fence, so regex-based fence stripping leaves multiple concatenated
+    objects that fail to parse. Instead we locate the first '{' and walk forward
+    counting braces (respecting quoted strings and escape sequences) until the
+    matching '}' is found, then return only that slice.
+    """
+    start = raw.find('{')
+    if start == -1:
+        return raw.strip()
+
+    depth = 0
+    in_string = False
+    escape = False
+    for i, ch in enumerate(raw[start:], start):
+        if escape:
+            escape = False
+            continue
+        if ch == '\\' and in_string:
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                return raw[start:i + 1]
+
+    # No balanced closing brace found — return from first '{' and let json.loads report the error
+    return raw[start:].strip()
 
 
 def _build_prompt(
