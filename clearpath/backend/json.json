@@ -1,223 +1,232 @@
+"servers": [
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "ClearPath API",
-    "description": "AI-powered nursing CE recommendation engine backed by IBM watsonx.ai",
-    "version": "0.1.0"
-  },
-  "servers": [
-    {
-      "url": "https://gilda-prepossessionary-aerodynamically.ngrok-free.app",
-      "description": "ClearPath API"
-    }
-  ],
-  "paths": {
-    "/": {
-      "get": {
-        "tags": ["health"],
-        "summary": "Health Check",
-        "operationId": "health_check__get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {"application/json": {"schema": {}}}
-          }
-        }
-      }
-    },
-    "/departments": {
-      "get": {
-        "tags": ["departments"],
-        "summary": "List Departments",
-        "description": "Return all department IDs and display names.",
-        "operationId": "list_departments_departments_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {"application/json": {"schema": {}}}
-          }
-        }
-      }
-    },
-    "/departments/{department_id}/metrics": {
-      "get": {
-        "tags": ["departments"],
-        "summary": "Get Metrics",
-        "description": "Return all 12 months of raw EMR metrics for a department.",
-        "operationId": "get_metrics_departments__department_id__metrics_get",
-        "parameters": [
-          {
-            "name": "department_id",
-            "in": "path",
-            "required": true,
-            "schema": {"type": "string", "title": "Department Id"}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {"application/json": {"schema": {}}}
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
-          }
-        }
-      }
-    },
-    "/seasonal/{month}": {
-      "get": {
-        "tags": ["seasonal"],
-        "summary": "Seasonal Risks",
-        "description": "Return active seasonal risk patterns for a given month (1-12).",
-        "operationId": "seasonal_risks_seasonal__month__get",
-        "parameters": [
-          {
-            "name": "month",
-            "in": "path",
-            "required": true,
-            "schema": {"type": "integer", "title": "Month"}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {"application/json": {"schema": {}}}
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
-          }
-        }
-      }
-    },
-    "/analyze": {
-      "post": {
-        "tags": ["analysis"],
-        "summary": "Analyze",
-        "description": "Analyze a department's EMR data for the given month and return AI-generated CE recommendations powered by IBM watsonx.ai (Llama 3.3 70B).",
-        "operationId": "analyze_analyze_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {"$ref": "#/components/schemas/AnalysisRequest"}
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnalysisResponse"}}}
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "AnalysisRequest": {
-        "properties": {
-          "department_id": {"type": "string", "title": "Department Id"},
-          "current_month": {
-            "type": "integer",
-            "maximum": 12,
-            "minimum": 1,
-            "title": "Current Month",
-            "description": "Month number 1-12"
-          }
-        },
-        "type": "object",
-        "required": ["department_id", "current_month"],
-        "title": "AnalysisRequest"
-      },
-      "AnalysisResponse": {
-        "properties": {
-          "department_id": {"type": "string", "title": "Department Id"},
-          "department_name": {"type": "string", "title": "Department Name"},
-          "current_month": {"type": "integer", "title": "Current Month"},
-          "recommendations": {
-            "items": {"$ref": "#/components/schemas/CERecommendation"},
-            "type": "array",
-            "title": "Recommendations"
-          },
-          "risk_summary": {
-            "type": "string",
-            "title": "Risk Summary",
-            "description": "Plain language summary of the department risk profile"
-          },
-          "causal_chain": {
-            "anyOf": [{"type": "string"}, {"type": "null"}],
-            "title": "Causal Chain",
-            "description": "Identified causal chain e.g. staffing strain -> handoff quality -> readmissions"
-          },
-          "analysis_timestamp": {"type": "string", "title": "Analysis Timestamp"}
-        },
-        "type": "object",
-        "required": ["department_id", "department_name", "current_month", "recommendations", "risk_summary", "analysis_timestamp"],
-        "title": "AnalysisResponse"
-      },
-      "CERecommendation": {
-        "properties": {
-          "topic": {"type": "string", "title": "Topic"},
-          "hours": {
-            "type": "number",
-            "title": "Hours",
-            "description": "Recommended CE credit hours"
-          },
-          "timing": {
-            "type": "string",
-            "title": "Timing",
-            "description": "When to deliver: immediate, this_month, next_quarter"
-          },
-          "urgency_score": {
-            "type": "integer",
-            "maximum": 10,
-            "minimum": 1,
-            "title": "Urgency Score",
-            "description": "Urgency from 1 (low) to 10 (critical)"
-          },
-          "reasoning": {
-            "type": "string",
-            "title": "Reasoning",
-            "description": "Data-backed rationale for this recommendation"
-          }
-        },
-        "type": "object",
-        "required": ["topic", "hours", "timing", "urgency_score", "reasoning"],
-        "title": "CERecommendation"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {"$ref": "#/components/schemas/ValidationError"},
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
-            "type": "array",
-            "title": "Location"
-          },
-          "msg": {"type": "string", "title": "Message"},
-          "type": {"type": "string", "title": "Error Type"},
-          "input": {"title": "Input"},
-          "ctx": {"type": "object", "title": "Context"}
-        },
-        "type": "object",
-        "required": ["loc", "msg", "type"],
-        "title": "ValidationError"
-      }
-    }
-  }
+"url": "https://your-railway-url.up.railway.app",
+"description": "ClearPath API"
+}
+]
+Save it, then test the agent again with "Analyze the ICU for March" and you should get a clean response with no more tunnel dropping.
+What URL did Railway give you?clearpath-production-afb6.up.railway.appthats my domain can you build the json
+\4:26 PMHere you go:
+json{
+"openapi": "3.1.0",
+"info": {
+"title": "ClearPath API",
+"description": "AI-powered nursing CE recommendation engine backed by IBM watsonx.ai",
+"version": "0.1.0"
+},
+"servers": [
+{
+"url": "https://clearpath-production-afb6.up.railway.app",
+"description": "ClearPath API"
+}
+],
+"paths": {
+"/": {
+"get": {
+"tags": ["health"],
+"summary": "Health Check",
+"operationId": "health_check__get",
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {"application/json": {"schema": {}}}
+}
+}
+}
+},
+"/departments": {
+"get": {
+"tags": ["departments"],
+"summary": "List Departments",
+"description": "Return all department IDs and display names.",
+"operationId": "list_departments_departments_get",
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {"application/json": {"schema": {}}}
+}
+}
+}
+},
+"/departments/{department_id}/metrics": {
+"get": {
+"tags": ["departments"],
+"summary": "Get Metrics",
+"description": "Return all 12 months of raw EMR metrics for a department.",
+"operationId": "get_metrics_departments__department_id__metrics_get",
+"parameters": [
+{
+"name": "department_id",
+"in": "path",
+"required": true,
+"schema": {"type": "string", "title": "Department Id"}
+}
+],
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {"application/json": {"schema": {}}}
+},
+"422": {
+"description": "Validation Error",
+"content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
+}
+}
+}
+},
+"/seasonal/{month}": {
+"get": {
+"tags": ["seasonal"],
+"summary": "Seasonal Risks",
+"description": "Return active seasonal risk patterns for a given month (1-12).",
+"operationId": "seasonal_risks_seasonal__month__get",
+"parameters": [
+{
+"name": "month",
+"in": "path",
+"required": true,
+"schema": {"type": "integer", "title": "Month"}
+}
+],
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {"application/json": {"schema": {}}}
+},
+"422": {
+"description": "Validation Error",
+"content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
+}
+}
+}
+},
+"/analyze": {
+"post": {
+"tags": ["analysis"],
+"summary": "Analyze",
+"description": "Analyze a department's EMR data for the given month and return AI-generated CE recommendations powered by IBM watsonx.ai (Llama 3.3 70B).",
+"operationId": "analyze_analyze_post",
+"requestBody": {
+"content": {
+"application/json": {
+"schema": {"$ref": "#/components/schemas/AnalysisRequest"}
+}
+},
+"required": true
+},
+"responses": {
+"200": {
+"description": "Successful Response",
+"content": {"application/json": {"schema": {"$ref": "#/components/schemas/AnalysisResponse"}}}
+},
+"422": {
+"description": "Validation Error",
+"content": {"application/json": {"schema": {"$ref": "#/components/schemas/HTTPValidationError"}}}
+}
+}
+}
+}
+},
+"components": {
+"schemas": {
+"AnalysisRequest": {
+"properties": {
+"department_id": {"type": "string", "title": "Department Id"},
+"current_month": {
+"type": "integer",
+"maximum": 12,
+"minimum": 1,
+"title": "Current Month",
+"description": "Month number 1-12"
+}
+},
+"type": "object",
+"required": ["department_id", "current_month"],
+"title": "AnalysisRequest"
+},
+"AnalysisResponse": {
+"properties": {
+"department_id": {"type": "string", "title": "Department Id"},
+"department_name": {"type": "string", "title": "Department Name"},
+"current_month": {"type": "integer", "title": "Current Month"},
+"recommendations": {
+"items": {"$ref": "#/components/schemas/CERecommendation"},
+"type": "array",
+"title": "Recommendations"
+},
+"risk_summary": {
+"type": "string",
+"title": "Risk Summary",
+"description": "Plain language summary of the department risk profile"
+},
+"causal_chain": {
+"anyOf": [{"type": "string"}, {"type": "null"}],
+"title": "Causal Chain",
+"description": "Identified causal chain e.g. staffing strain -> handoff quality -> readmissions"
+},
+"analysis_timestamp": {"type": "string", "title": "Analysis Timestamp"}
+},
+"type": "object",
+"required": ["department_id", "department_name", "current_month", "recommendations", "risk_summary", "analysis_timestamp"],
+"title": "AnalysisResponse"
+},
+"CERecommendation": {
+"properties": {
+"topic": {"type": "string", "title": "Topic"},
+"hours": {
+"type": "number",
+"title": "Hours",
+"description": "Recommended CE credit hours"
+},
+"timing": {
+"type": "string",
+"title": "Timing",
+"description": "When to deliver: immediate, this_month, next_quarter"
+},
+"urgency_score": {
+"type": "integer",
+"maximum": 10,
+"minimum": 1,
+"title": "Urgency Score",
+"description": "Urgency from 1 (low) to 10 (critical)"
+},
+"reasoning": {
+"type": "string",
+"title": "Reasoning",
+"description": "Data-backed rationale for this recommendation"
+}
+},
+"type": "object",
+"required": ["topic", "hours", "timing", "urgency_score", "reasoning"],
+"title": "CERecommendation"
+},
+"HTTPValidationError": {
+"properties": {
+"detail": {
+"items": {"$ref": "#/components/schemas/ValidationError"},
+"type": "array",
+"title": "Detail"
+}
+},
+"type": "object",
+"title": "HTTPValidationError"
+},
+"ValidationError": {
+"properties": {
+"loc": {
+"items": {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+"type": "array",
+"title": "Location"
+},
+"msg": {"type": "string", "title": "Message"},
+"type": {"type": "string", "title": "Error Type"},
+"input": {"title": "Input"},
+"ctx": {"type": "object", "title": "Context"}
+},
+"type": "object",
+"required": ["loc", "msg", "type"],
+"title": "ValidationError"
+}
+}
+}
 }
