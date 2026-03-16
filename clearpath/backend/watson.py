@@ -4,8 +4,12 @@ Uses meta-llama/llama-3-3-70b-instruct via the ibm-watsonx-ai SDK.
 """
 
 import json
+import logging
 import os
+import re
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
 
@@ -21,6 +25,15 @@ MONTH_NAMES = {
     5: "May", 6: "June", 7: "July", 8: "August",
     9: "September", 10: "October", 11: "November", 12: "December",
 }
+
+
+def clean_json_response(raw: str) -> str:
+    """Strip markdown code fences from a model response before JSON parsing."""
+    raw = raw.strip()
+    raw = re.sub(r'^```json\s*', '', raw)
+    raw = re.sub(r'^```\s*', '', raw)
+    raw = re.sub(r'\s*```$', '', raw)
+    return raw.strip()
 
 
 def _build_prompt(
@@ -174,17 +187,18 @@ def analyze_department(
         raise RuntimeError(f"watsonx.ai API call failed: {exc}") from exc
 
     # Parse the model's JSON response
+    cleaned = clean_json_response(response)
     try:
-        # Strip markdown code fences if present
-        text = response.strip()
-        if text.startswith("```"):
-            lines = text.split("\n")
-            text = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
-
-        parsed = json.loads(text)
+        parsed = json.loads(cleaned)
     except json.JSONDecodeError as exc:
+        logger.error(
+            "JSON parse failed after fence stripping.\n"
+            "--- RAW RESPONSE ---\n%s\n--- CLEANED ---\n%s",
+            response,
+            cleaned,
+        )
         raise RuntimeError(
-            f"Model returned non-JSON response. Raw output:\n{response[:500]}"
+            f"Model returned non-JSON response. Raw output:\n{response[:800]}"
         ) from exc
 
     # Validate required keys
