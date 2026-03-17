@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment } from 'react'
 import {
-  ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, Cell,
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -12,7 +12,6 @@ const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 const MONTH_FULL  = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                          'July', 'August', 'September', 'October', 'November', 'December']
 
-// Known standard names for reference badge scanning
 const KNOWN_STANDARDS = [
   'I-PASS', 'AHRQ', 'NQF', 'CMS', 'ANA', 'Leapfrog', 'Joint Commission',
   'SEP-1', 'HRRP', 'NPSG', 'TeamSTEPPS', 'CUSP', 'CLABSI', 'SBAR',
@@ -93,7 +92,6 @@ function getWorstMetric(m, benchmarks) {
   for (const [key, bench] of Object.entries(benchmarks)) {
     const val = m[key]
     if (val == null) continue
-    // For handoff score, higher is better; for everything else, lower is better
     const gap = key === 'handoff_documentation_score'
       ? bench.target - val
       : val - bench.target
@@ -112,6 +110,15 @@ function findReferenceBadges(text) {
     if (text.includes(std)) found.push(std)
   }
   return [...new Set(found)]
+}
+
+function key_format(key, val) {
+  if (key === 'readmission_rate_30d') return `${val}%`
+  if (key === 'medication_error_rate') return `${val}/1k`
+  if (key === 'nurse_patient_ratio') return `1:${val}`
+  if (key === 'sepsis_response_time_minutes') return `${val} min`
+  if (key === 'handoff_documentation_score') return `${val}/100`
+  return `${val}`
 }
 
 // ─── Small shared atoms ───────────────────────────────────────────────────────
@@ -200,6 +207,39 @@ function Header({ onDashboard }) {
   )
 }
 
+// ─── Orchestrate Banner ──────────────────────────────────────────────────────
+
+function OrchestrateBanner() {
+  return (
+    <div style={{
+      background: `linear-gradient(135deg, ${C.blue}12, ${C.blueLt}08)`,
+      border: `1px solid ${C.blue}25`,
+      borderRadius: 10,
+      padding: '12px 20px',
+      display: 'flex', alignItems: 'center', gap: 12,
+      marginBottom: 24,
+    }}>
+      <div style={{
+        width: 32, height: 32, borderRadius: 8,
+        background: `${C.blue}18`,
+        border: `1px solid ${C.blue}30`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, flexShrink: 0,
+      }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7zm0 12.5A5.506 5.506 0 012.5 8 5.506 5.506 0 018 2.5 5.506 5.506 0 0113.5 8 5.506 5.506 0 018 13.5z" fill={C.blueLt}/>
+          <path d="M8 4.5a1 1 0 00-1 1v3a1 1 0 001 1h2.5a1 1 0 000-2H9V5.5a1 1 0 00-1-1z" fill={C.blueLt}/>
+        </svg>
+      </div>
+      <div>
+        <div style={{ fontSize: 13, color: C.txt1, fontWeight: 500 }}>
+          Conversational interface powered by IBM watsonx Orchestrate — available via dedicated agent portal
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Month Selector ──────────────────────────────────────────────────────────
 
 function MonthSelector({ currentMonth, onChange }) {
@@ -260,7 +300,7 @@ function RiskRing({ score }) {
   )
 }
 
-// ─── Department Card (simplified) ────────────────────────────────────────────
+// ─── Department Card ─────────────────────────────────────────────────────────
 
 function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, currentMonth }) {
   const [hov, setHov] = useState(false)
@@ -280,7 +320,6 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         display: 'flex', flexDirection: 'column', gap: 16,
       }}
     >
-      {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <div style={{ fontSize: 16, fontWeight: 600, color: C.txt1 }}>{dept.department_name}</div>
@@ -293,7 +332,6 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         }
       </div>
 
-      {/* Worst metric callout */}
       {worst && (
         <div style={{
           background: `${worst.gap > 0 ? C.red : C.green}08`,
@@ -313,7 +351,6 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         </div>
       )}
 
-      {/* Analyze button */}
       <button
         onClick={() => onAnalyze(dept.department_id)}
         disabled={analyzing}
@@ -340,16 +377,7 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
   )
 }
 
-function key_format(key, val) {
-  if (key === 'readmission_rate_30d') return `${val}%`
-  if (key === 'medication_error_rate') return `${val}/1k`
-  if (key === 'nurse_patient_ratio') return `1:${val}`
-  if (key === 'sepsis_response_time_minutes') return `${val} min`
-  if (key === 'handoff_documentation_score') return `${val}/100`
-  return `${val}`
-}
-
-// ─── Seasonal Panel (horizontal cards, simplified) ───────────────────────────
+// ─── Seasonal Panel ──────────────────────────────────────────────────────────
 
 function SeasonalPanel({ risks, currentMonth }) {
   return (
@@ -430,20 +458,23 @@ function SummaryBanner({ departments, departmentMetrics, seasonalRisks, currentM
 
 function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, onAnalyze, analyzingId, currentMonth, onMonthChange }) {
   return (
-    <div style={{ padding: '32px 28px' }}>
+    <div style={{ padding: '32px 28px', maxWidth: 1200, margin: '0 auto' }}>
       {/* Page header */}
       <div style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.txt1 }}>Director Dashboard</h1>
+        <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: C.txt1 }}>Director Dashboard</h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: C.txt3 }}>
           Unit-level risk intelligence for {MONTH_FULL[currentMonth]} 2025
           &nbsp;·&nbsp; {departments.length} departments monitored
         </p>
       </div>
 
+      {/* Orchestrate banner */}
+      <OrchestrateBanner />
+
       {/* Month selector */}
       <MonthSelector currentMonth={currentMonth} onChange={onMonthChange} />
 
-      {/* Summary banner */}
+      {/* Summary stats */}
       <SummaryBanner
         departments={departments}
         departmentMetrics={departmentMetrics}
@@ -454,7 +485,7 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
       {/* Department cards grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: 16,
       }}>
         {departments.map(dept => (
@@ -470,8 +501,8 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
         ))}
       </div>
 
-      {/* Seasonal forecast below */}
-      <div style={{ marginTop: 28 }}>
+      {/* Seasonal forecast */}
+      <div style={{ marginTop: 32 }}>
         <SeasonalPanel risks={seasonalRisks} currentMonth={currentMonth} />
       </div>
     </div>
@@ -542,7 +573,6 @@ function CECard({ rec }) {
       onMouseLeave={e => e.currentTarget.style.background = C.card}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-        {/* Urgency badge */}
         <div style={{
           minWidth: 46, height: 46, borderRadius: 8,
           background: `${color}15`, border: `1px solid ${color}35`,
@@ -553,7 +583,6 @@ function CECard({ rec }) {
           <span style={{ fontSize: 8, color: `${color}90`, letterSpacing: 0.5 }}>/ 10</span>
         </div>
 
-        {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: C.txt1, marginBottom: 8, lineHeight: 1.4 }}>
             {rec.topic}
@@ -569,7 +598,6 @@ function CECard({ rec }) {
         </div>
       </div>
 
-      {/* Expanded reasoning */}
       {open && (
         <div style={{
           marginTop: 16, paddingTop: 16,
@@ -694,7 +722,7 @@ function SOAPNotesSection({ notes }) {
               borderRadius: 10, padding: 18,
               background: 'rgba(255,255,255,0.015)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.txt1 }}>{note.note_type}</span>
                   <span style={{ fontSize: 12, color: C.txt3, marginLeft: 10 }}>{note.note_id}</span>
@@ -772,7 +800,6 @@ function MetricsTrend({ metrics, currentMonth }) {
     }}>
       <SectionLabel>6-Month EMR Trend</SectionLabel>
 
-      {/* Legend */}
       <div style={{ display: 'flex', gap: 18, marginBottom: 16, flexWrap: 'wrap' }}>
         {CHART_SERIES.map(s => (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -782,30 +809,15 @@ function MetricsTrend({ metrics, currentMonth }) {
         ))}
       </div>
 
-      <ResponsiveContainer width="100%" height={200}>
+      <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-          <XAxis
-            dataKey="label"
-            tick={{ fill: C.txt3, fontSize: 11 }}
-            axisLine={false} tickLine={false}
-          />
-          <YAxis
-            yAxisId="L"
-            tick={{ fill: C.txt3, fontSize: 11 }}
-            axisLine={false} tickLine={false}
-            domain={[0, 30]} width={32}
-          />
-          <YAxis
-            yAxisId="R"
-            orientation="right"
-            tick={{ fill: C.txt3, fontSize: 11 }}
-            axisLine={false} tickLine={false}
-            domain={[50, 100]} width={36}
-          />
+          <XAxis dataKey="label" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="L" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 30]} width={32} />
+          <YAxis yAxisId="R" orientation="right" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[50, 100]} width={36} />
           <Tooltip content={<CustomTooltip />} />
           <ReferenceLine yAxisId="L" y={15} stroke={`${C.red}40`} strokeDasharray="4 4" />
-          <Line yAxisId="L" type="monotone" dataKey="readmission_rate_30d" stroke={C.red}    strokeWidth={2} dot={false} />
+          <Line yAxisId="L" type="monotone" dataKey="readmission_rate_30d" stroke={C.red} strokeWidth={2} dot={false} />
           <Line yAxisId="L" type="monotone" dataKey="medication_error_rate" stroke={C.orange} strokeWidth={2} dot={false} />
           <Line yAxisId="R" type="monotone" dataKey="handoff_documentation_score" stroke={C.blue} strokeWidth={2} dot={false} />
         </ComposedChart>
@@ -821,8 +833,7 @@ function MetricsTrend({ metrics, currentMonth }) {
 
 function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, currentMonth }) {
   return (
-    <div style={{ padding: '32px 28px', maxWidth: 920, margin: '0 auto' }}>
-      {/* Back */}
+    <div style={{ padding: '32px 28px', maxWidth: 960, margin: '0 auto' }}>
       <button
         onClick={onBack}
         style={{
@@ -838,16 +849,14 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
         ← Back to Dashboard
       </button>
 
-      {/* Department header */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>
           AI Analysis · {MONTH_FULL[currentMonth]} 2025
         </div>
-        <h1 style={{ margin: '0 0 16px', fontSize: 26, fontWeight: 700, color: C.txt1 }}>
+        <h1 style={{ margin: '0 0 16px', fontSize: 28, fontWeight: 700, color: C.txt1 }}>
           {analysis.department_name}
         </h1>
 
-        {/* Risk summary */}
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
           borderRadius: 12, padding: '20px 24px',
@@ -857,19 +866,14 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
         </div>
       </div>
 
-      {/* Causal chain */}
       {analysis.causal_chain && <CausalChain chain={analysis.causal_chain} />}
 
-      {/* Benchmark comparison */}
       {benchmarks && <BenchmarkBars metrics={metrics} benchmarks={benchmarks} currentMonth={currentMonth} />}
 
-      {/* 6-month trend */}
       {metrics && <MetricsTrend metrics={metrics} currentMonth={currentMonth} />}
 
-      {/* SOAP Notes */}
       <SOAPNotesSection notes={soapNotes} />
 
-      {/* CE Recommendations */}
       <div style={{ marginTop: 8 }}>
         <SectionLabel>CE Recommendations · {analysis.recommendations.length} items</SectionLabel>
         {[...analysis.recommendations]
@@ -928,7 +932,6 @@ export default function App() {
   const [error, setError]             = useState(null)
   const [currentMonth, setCurrentMonth] = useState(3)
 
-  // Initial data load
   useEffect(() => {
     async function init() {
       try {
@@ -939,7 +942,6 @@ export default function App() {
         setDepartments(depts)
         setSeasonalRisks(seasonal.seasonal_risks ?? [])
 
-        // Fetch metrics, benchmarks, and SOAP notes in parallel
         const [metricsEntries, benchmarkEntries, soapEntries] = await Promise.all([
           Promise.all(
             depts.map(d =>
@@ -978,7 +980,6 @@ export default function App() {
     init()
   }, [])
 
-  // Re-fetch seasonal risks when month changes
   useEffect(() => {
     if (loading) return
     fetch(`${API}/seasonal/${currentMonth}`)
@@ -1017,7 +1018,6 @@ export default function App() {
   return (
     <div style={{
       minHeight: '100vh',
-      marginRight: 380,
       background: C.bg,
       color: C.txt1,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "IBM Plex Sans", sans-serif',
@@ -1053,10 +1053,6 @@ export default function App() {
       <style>{`
         @keyframes spin  { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity:.3 } 50% { opacity:.7 } }
-
-        @media (max-width: 900px) {
-          #wxo-chat { display: none !important; }
-        }
       `}</style>
     </div>
   )
