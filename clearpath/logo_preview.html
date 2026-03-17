@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ClearPath Logo Options</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: #f4f4f4; padding: 48px; }
+  h1 { font-size: 28px; color: #161616; margin-bottom: 8px; }
+  p { font-size: 14px; color: #525252; margin-bottom: 48px; }
+  .options { display: flex; gap: 40px; flex-wrap: wrap; }
+  .option {
+    flex: 1;
+    min-width: 320px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+  }
+  .option h2 { font-size: 16px; color: #161616; margin-bottom: 4px; }
+  .option .desc { font-size: 13px; color: #6f6f6f; margin-bottom: 32px; }
+  .previews { display: flex; flex-direction: column; gap: 24px; align-items: center; }
+  .preview-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 32px;
+    border-radius: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+  .on-light { background: #ffffff; border: 1px solid #e0e0e0; }
+  .on-dark { background: #161616; }
+  .logo-text-light { font-size: 28px; font-weight: 700; color: #161616; letter-spacing: -0.8px; }
+  .logo-text-dark { font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.8px; }
+  .label { font-size: 10px; color: #a8a8a8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h1>ClearPath Logo Options</h1>
+<p>Pick your favorite. All are inline SVG — no external files needed.</p>
+
+<div class="options">
+
+  <!-- OPTION A: Compass / North Star -->
+  <div class="option">
+    <h2>Option A — North Star</h2>
+    <div class="desc">A compass star pointing north. "Clear direction through data."</div>
+    <div class="previews">
+      <div class="preview-row on-light">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <!-- Outer ring -->
+          <circle cx="26" cy="26" r="24" stroke="#0f62fe" stroke-width="2" fill="none" opacity="0.15"/>
+          <!-- 4-point star -->
+          <path d="M26 4 L30 22 L48 26 L30 30 L26 48 L22 30 L4 26 L22 22 Z" fill="#0f62fe"/>
+          <!-- Center dot -->
+          <circle cx="26" cy="26" r="3" fill="#ffffff"/>
+        </svg>
+        <span class="logo-text-light">ClearPath</span>
+      </div>
+      <div class="preview-row on-dark">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <circle cx="26" cy="26" r="24" stroke="#4589ff" stroke-width="2" fill="none" opacity="0.2"/>
+          <path d="M26 4 L30 22 L48 26 L30 30 L26 48 L22 30 L4 26 L22 22 Z" fill="#4589ff"/>
+          <circle cx="26" cy="26" r="3" fill="#161616"/>
+        </svg>
+        <span class="logo-text-dark">ClearPath</span>
+      </div>
+      <div class="label">on light &amp; dark</div>
+    </div>
+  </div>
+
+  <!-- OPTION B: Converging Paths / Decision Tree -->
+  <div class="option">
+    <h2>Option B — Converging Paths</h2>
+    <div class="desc">Three data streams converge into one clear path forward. "Many signals, one direction."</div>
+    <div class="previews">
+      <div class="preview-row on-light">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <!-- Three input paths converging to one output -->
+          <path d="M6 10 Q20 10 26 26" stroke="#0f62fe" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+          <path d="M6 26 L26 26" stroke="#0f62fe" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.6"/>
+          <path d="M6 42 Q20 42 26 26" stroke="#0f62fe" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+          <!-- Single bold output path -->
+          <path d="M26 26 L46 26" stroke="#0f62fe" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <!-- Arrow head -->
+          <path d="M42 21 L48 26 L42 31" stroke="#0f62fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Convergence node -->
+          <circle cx="26" cy="26" r="4.5" fill="#0f62fe"/>
+          <!-- Input dots -->
+          <circle cx="6" cy="10" r="3" fill="#0f62fe" opacity="0.4"/>
+          <circle cx="6" cy="26" r="3" fill="#0f62fe" opacity="0.6"/>
+          <circle cx="6" cy="42" r="3" fill="#0f62fe" opacity="0.4"/>
+        </svg>
+        <span class="logo-text-light">ClearPath</span>
+      </div>
+      <div class="preview-row on-dark">
+        <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+          <path d="M6 10 Q20 10 26 26" stroke="#4589ff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.35"/>
+          <path d="M6 26 L26 26" stroke="#4589ff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.55"/>
+          <path d="M6 42 Q20 42 26 26" stroke="#4589ff" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.35"/>
+          <path d="M26 26 L46 26" stroke="#4589ff" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <path d="M42 21 L48 26 L42 31" stroke="#4589ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="26" cy="26" r="4.5" fill="#4589ff"/>
+          <circle cx="6" cy="10" r="3" fill="#4589ff" opacity="0.35"/>
+          <circle cx="6" cy="26" r="3" fill="#4589ff" opacity="0.55"/>
+          <circle cx="6" cy="42" r="3" fill="#4589ff" opacity="0.35"/>
+        </svg>
+        <span class="logo-text-dark">ClearPath</span>
+      </div>
+      <div class="label">on light &amp; dark</div>
+    </div>
+  </div>
+
+  <!-- OPTION C: Pulse to Clarity -->
+  <div class="option">
+    <h2>Option C — Signal Pulse</h2>
+    <div class="desc">A healthcare pulse line that resolves into a clear upward trend. "From noise to clarity."</div>
+    <div class="previews">
+      <div class="preview-row on-light">
+        <svg width="56" height="48" viewBox="0 0 56 48" fill="none">
+          <!-- Chaotic pulse on left -->
+          <path d="M4 28 L10 28 L13 18 L16 36 L19 12 L22 38 L25 24" stroke="#0f62fe" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.35"/>
+          <!-- Transition node -->
+          <circle cx="27" cy="24" r="3.5" fill="#0f62fe" opacity="0.6"/>
+          <!-- Clean rising path -->
+          <path d="M29 24 L36 20 L44 14 L52 8" stroke="#0f62fe" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Glow dot at end -->
+          <circle cx="52" cy="8" r="3" fill="#0f62fe"/>
+          <!-- Subtle baseline -->
+          <line x1="4" y1="42" x2="52" y2="42" stroke="#e0e0e0" stroke-width="1"/>
+        </svg>
+        <span class="logo-text-light">ClearPath</span>
+      </div>
+      <div class="preview-row on-dark">
+        <svg width="56" height="48" viewBox="0 0 56 48" fill="none">
+          <path d="M4 28 L10 28 L13 18 L16 36 L19 12 L22 38 L25 24" stroke="#4589ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.3"/>
+          <circle cx="27" cy="24" r="3.5" fill="#4589ff" opacity="0.6"/>
+          <path d="M29 24 L36 20 L44 14 L52 8" stroke="#4589ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="52" cy="8" r="3" fill="#4589ff"/>
+          <line x1="4" y1="42" x2="52" y2="42" stroke="#393939" stroke-width="1"/>
+        </svg>
+        <span class="logo-text-dark">ClearPath</span>
+      </div>
+      <div class="label">on light &amp; dark</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

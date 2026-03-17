@@ -196,12 +196,14 @@ function Header({ onDashboard }) {
         style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', userSelect: 'none' }}
         onClick={onDashboard}
       >
-        <div style={{
-          width: 34, height: 34, borderRadius: 6,
-          background: C.blue,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15, fontWeight: 700, color: '#fff',
-        }}>CP</div>
+        <div style={{ width: 38, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg width="38" height="28" viewBox="0 0 56 48" fill="none">
+            <path d="M4 28 L10 28 L13 18 L16 36 L19 12 L22 38 L25 24" stroke={C.blue} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.35"/>
+            <circle cx="27" cy="24" r="3.5" fill={C.blue} opacity="0.6"/>
+            <path d="M29 24 L36 20 L44 14 L52 8" stroke={C.blue} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <circle cx="52" cy="8" r="3" fill={C.blue}/>
+          </svg>
+        </div>
         <div>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.txt1, letterSpacing: '-0.3px', lineHeight: 1 }}>ClearPath</div>
           <div style={{ fontSize: 10, color: C.txt3, marginTop: 1 }}>Nursing CE Intelligence Platform</div>
