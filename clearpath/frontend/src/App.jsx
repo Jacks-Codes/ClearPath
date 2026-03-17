@@ -1,17 +1,23 @@
 import { useState, useEffect, Fragment } from 'react'
 import {
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine,
+  ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const API = 'https://clearpath-production-2705.up.railway.app'
-const CURRENT_MONTH = 3
 const MONTH_NAMES = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTH_FULL  = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                          'July', 'August', 'September', 'October', 'November', 'December']
+
+// Known standard names for reference badge scanning
+const KNOWN_STANDARDS = [
+  'I-PASS', 'AHRQ', 'NQF', 'CMS', 'ANA', 'Leapfrog', 'Joint Commission',
+  'SEP-1', 'HRRP', 'NPSG', 'TeamSTEPPS', 'CUSP', 'CLABSI', 'SBAR',
+  'Safe Practice', 'Morse', 'NEWS2', 'MEWS', 'SOFA', 'GINA',
+]
 
 // IBM Carbon palette
 const C = {
@@ -51,8 +57,8 @@ function riskLevelColor(lvl) {
   return { critical: C.red, high: C.orange, moderate: C.yellow, low: C.green }[lvl] ?? C.txt3
 }
 
-function computeRiskScore(metrics) {
-  const m = metrics.find(r => r.month === CURRENT_MONTH) ?? metrics.at(-1)
+function computeRiskScore(metrics, month) {
+  const m = metrics.find(r => r.month === month) ?? metrics.at(-1)
   if (!m) return 5
   const n = [
     Math.min(m.patient_fall_rate / 4, 1),
@@ -65,10 +71,10 @@ function computeRiskScore(metrics) {
   return Math.round((n.reduce((a, b) => a + b, 0) / n.length) * 10)
 }
 
-function getLast6Months(metrics) {
+function getLast6Months(metrics, currentMonth) {
   const result = []
   for (let i = 5; i >= 0; i--) {
-    const mo = ((CURRENT_MONTH - 1 - i + 12) % 12) + 1
+    const mo = ((currentMonth - 1 - i + 12) % 12) + 1
     const rec = metrics.find(r => r.month === mo)
     if (rec) result.push({ ...rec, label: MONTH_NAMES[mo] })
   }
@@ -78,6 +84,34 @@ function getLast6Months(metrics) {
 function parseCausalChain(chain) {
   if (!chain) return []
   return chain.split(/\s*(?:→|->)\s*/).map(s => s.trim()).filter(Boolean)
+}
+
+function getWorstMetric(m, benchmarks) {
+  if (!m || !benchmarks) return null
+  let worst = null
+  let worstGap = 0
+  for (const [key, bench] of Object.entries(benchmarks)) {
+    const val = m[key]
+    if (val == null) continue
+    // For handoff score, higher is better; for everything else, lower is better
+    const gap = key === 'handoff_documentation_score'
+      ? bench.target - val
+      : val - bench.target
+    if (gap > worstGap) {
+      worstGap = gap
+      worst = { key, label: bench.label, value: val, target: bench.target, gap, source: bench.source, higherIsBetter: key === 'handoff_documentation_score' }
+    }
+  }
+  return worst
+}
+
+function findReferenceBadges(text) {
+  if (!text) return []
+  const found = []
+  for (const std of KNOWN_STANDARDS) {
+    if (text.includes(std)) found.push(std)
+  }
+  return [...new Set(found)]
 }
 
 // ─── Small shared atoms ───────────────────────────────────────────────────────
@@ -105,6 +139,17 @@ function Badge({ label, color, bg }) {
     }}>
       {label}
     </span>
+  )
+}
+
+function SectionLabel({ children }) {
+  return (
+    <div style={{
+      fontSize: 11, fontWeight: 700, color: C.txt3,
+      textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14,
+    }}>
+      {children}
+    </div>
   )
 }
 
@@ -155,6 +200,39 @@ function Header({ onDashboard }) {
   )
 }
 
+// ─── Month Selector ──────────────────────────────────────────────────────────
+
+function MonthSelector({ currentMonth, onChange }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 24,
+    }}>
+      {MONTH_NAMES.slice(1).map((name, i) => {
+        const mo = i + 1
+        const active = mo === currentMonth
+        return (
+          <button
+            key={mo}
+            onClick={() => onChange(mo)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 20,
+              border: active ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
+              background: active ? `${C.blue}20` : 'transparent',
+              color: active ? C.blue : C.txt3,
+              fontSize: 12, fontWeight: active ? 700 : 500,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            {name}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Risk Ring (SVG donut) ────────────────────────────────────────────────────
 
 function RiskRing({ score }) {
@@ -182,19 +260,13 @@ function RiskRing({ score }) {
   )
 }
 
-// ─── Department Card ──────────────────────────────────────────────────────────
+// ─── Department Card (simplified) ────────────────────────────────────────────
 
-function DepartmentCard({ dept, metrics, onAnalyze, analyzing }) {
+function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, currentMonth }) {
   const [hov, setHov] = useState(false)
-  const score = metrics ? computeRiskScore(metrics) : null
-  const m = metrics?.find(r => r.month === CURRENT_MONTH)
-
-  const quickStats = m ? [
-    { label: '30d Readmit', value: `${m.readmission_rate_30d}%` },
-    { label: 'Handoff Score', value: `${m.handoff_documentation_score}/100` },
-    { label: 'Med Errors', value: `${m.medication_error_rate}/1k` },
-    { label: 'Nurse Ratio', value: `1:${m.nurse_patient_ratio}` },
-  ] : []
+  const score = metrics ? computeRiskScore(metrics, currentMonth) : null
+  const m = metrics?.find(r => r.month === currentMonth)
+  const worst = m && benchmarks ? getWorstMetric(m, benchmarks) : null
 
   return (
     <div
@@ -211,7 +283,7 @@ function DepartmentCard({ dept, metrics, onAnalyze, analyzing }) {
       {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: C.txt1 }}>{dept.department_name}</div>
+          <div style={{ fontSize: 16, fontWeight: 600, color: C.txt1 }}>{dept.department_name}</div>
           <div style={{ fontSize: 11, color: C.txt3, marginTop: 3 }}>ID: {dept.department_id}</div>
         </div>
         {score !== null
@@ -221,19 +293,23 @@ function DepartmentCard({ dept, metrics, onAnalyze, analyzing }) {
         }
       </div>
 
-      {/* Quick stats grid */}
-      {quickStats.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}>
-          {quickStats.map(({ label, value }) => (
-            <div key={label} style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.04)',
-              borderRadius: 6, padding: '7px 10px',
-            }}>
-              <div style={{ fontSize: 10, color: C.txt3 }}>{label}</div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.txt2, marginTop: 2 }}>{value}</div>
-            </div>
-          ))}
+      {/* Worst metric callout */}
+      {worst && (
+        <div style={{
+          background: `${worst.gap > 0 ? C.red : C.green}08`,
+          border: `1px solid ${worst.gap > 0 ? C.red : C.green}25`,
+          borderRadius: 8, padding: '10px 14px',
+        }}>
+          <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>{worst.label}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 18, fontWeight: 700, color: worst.gap > 0 ? C.red : C.green }}>
+              {worst.higherIsBetter ? `${worst.value}/100` : key_format(worst.key, worst.value)}
+            </span>
+            <span style={{ fontSize: 11, color: C.txt3 }}>
+              target: {worst.higherIsBetter ? `${worst.target}/100` : key_format(worst.key, worst.target)}
+            </span>
+          </div>
+          <div style={{ fontSize: 10, color: C.txt4, marginTop: 3 }}>{worst.source}</div>
         </div>
       )}
 
@@ -256,97 +332,147 @@ function DepartmentCard({ dept, metrics, onAnalyze, analyzing }) {
         {analyzing ? (
           <>
             <Spinner size={13} color={C.blueLt} />
-            Analyzing with watsonx.ai…
+            Generating report via watsonx.ai…
           </>
-        ) : '▶  Run AI Analysis'}
+        ) : 'Generate CE Report'}
       </button>
     </div>
   )
 }
 
-// ─── Seasonal Panel ───────────────────────────────────────────────────────────
+function key_format(key, val) {
+  if (key === 'readmission_rate_30d') return `${val}%`
+  if (key === 'medication_error_rate') return `${val}/1k`
+  if (key === 'nurse_patient_ratio') return `1:${val}`
+  if (key === 'sepsis_response_time_minutes') return `${val} min`
+  if (key === 'handoff_documentation_score') return `${val}/100`
+  return `${val}`
+}
 
-function SeasonalPanel({ risks }) {
+// ─── Seasonal Panel (horizontal cards, simplified) ───────────────────────────
+
+function SeasonalPanel({ risks, currentMonth }) {
   return (
-    <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: 22,
-    }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: C.txt3,
-        textTransform: 'uppercase', letterSpacing: 1, marginBottom: 18,
-      }}>
-        Seasonal Forecast — {MONTH_FULL[CURRENT_MONTH]}
-      </div>
+    <div style={{ marginTop: 8 }}>
+      <SectionLabel>Seasonal Forecast — {MONTH_FULL[currentMonth]}</SectionLabel>
 
       {risks.length === 0
-        ? <div style={{ color: C.txt3, fontSize: 13 }}>No active seasonal risks.</div>
-        : risks.map((risk, i) => (
-          <div key={i} style={{
-            borderLeft: `3px solid ${riskLevelColor(risk.risk_level)}`,
-            paddingLeft: 14, marginBottom: 20,
+        ? <div style={{ color: C.txt3, fontSize: 14 }}>No active seasonal risks.</div>
+        : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+            gap: 14,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: C.txt1 }}>{risk.name}</span>
-              <Badge label={risk.risk_level} color={riskLevelColor(risk.risk_level)} />
-            </div>
-            <div style={{ fontSize: 11, color: C.txt3, marginBottom: 8 }}>
-              {risk.affected_departments.join(' · ')}
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-              {risk.ce_topic_areas.slice(0, 2).map((topic, j) => (
-                <span key={j} style={{
-                  fontSize: 10, color: C.blueLt,
-                  background: C.blueDim,
-                  border: `1px solid ${C.blue}30`,
-                  borderRadius: 4, padding: '2px 7px',
-                }}>{topic}</span>
-              ))}
-            </div>
+            {risks.map((risk, i) => (
+              <div key={i} style={{
+                background: C.card,
+                border: `1px solid ${C.border}`,
+                borderLeft: `4px solid ${riskLevelColor(risk.risk_level)}`,
+                borderRadius: 10, padding: '16px 18px',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: C.txt1 }}>{risk.name}</span>
+                  <Badge label={risk.risk_level} color={riskLevelColor(risk.risk_level)} />
+                </div>
+                <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.5 }}>
+                  {risk.description.length > 120 ? risk.description.slice(0, 120) + '…' : risk.description}
+                </div>
+              </div>
+            ))}
           </div>
-        ))
+        )
       }
+    </div>
+  )
+}
+
+// ─── Summary Banner ──────────────────────────────────────────────────────────
+
+function SummaryBanner({ departments, departmentMetrics, seasonalRisks, currentMonth }) {
+  const elevatedCount = departments.filter(dept => {
+    const metrics = departmentMetrics[dept.department_id]
+    return metrics && computeRiskScore(metrics, currentMonth) >= 6
+  }).length
+
+  const totalCEHours = departments.reduce((sum, dept) => {
+    const metrics = departmentMetrics[dept.department_id]
+    if (!metrics) return sum
+    const score = computeRiskScore(metrics, currentMonth)
+    return sum + (score >= 7 ? 8 : score >= 4 ? 4 : 2)
+  }, 0)
+
+  return (
+    <div style={{
+      display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24,
+    }}>
+      {[
+        { value: elevatedCount, label: 'departments at elevated risk', color: elevatedCount > 0 ? C.orange : C.green },
+        { value: seasonalRisks.length, label: 'seasonal alerts active', color: seasonalRisks.length > 2 ? C.orange : C.blue },
+        { value: `${totalCEHours}+`, label: 'CE hours recommended', color: C.blue },
+      ].map(({ value, label, color }) => (
+        <div key={label} style={{
+          background: `${color}10`,
+          border: `1px solid ${color}30`,
+          borderRadius: 10, padding: '12px 20px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          flex: '1 1 200px',
+        }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color }}>{value}</span>
+          <span style={{ fontSize: 13, color: C.txt2 }}>{label}</span>
+        </div>
+      ))}
     </div>
   )
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
-function Dashboard({ departments, departmentMetrics, seasonalRisks, onAnalyze, analyzingId }) {
+function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, onAnalyze, analyzingId, currentMonth, onMonthChange }) {
   return (
     <div style={{ padding: '32px 28px' }}>
       {/* Page header */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: C.txt1 }}>Director Dashboard</h1>
-        <p style={{ margin: '6px 0 0', fontSize: 13, color: C.txt3 }}>
-          Unit-level risk intelligence for {MONTH_FULL[CURRENT_MONTH]} 2025
+        <p style={{ margin: '6px 0 0', fontSize: 14, color: C.txt3 }}>
+          Unit-level risk intelligence for {MONTH_FULL[currentMonth]} 2025
           &nbsp;·&nbsp; {departments.length} departments monitored
         </p>
       </div>
 
-      {/* Main layout: department grid + seasonal sidebar */}
+      {/* Month selector */}
+      <MonthSelector currentMonth={currentMonth} onChange={onMonthChange} />
+
+      {/* Summary banner */}
+      <SummaryBanner
+        departments={departments}
+        departmentMetrics={departmentMetrics}
+        seasonalRisks={seasonalRisks}
+        currentMonth={currentMonth}
+      />
+
+      {/* Department cards grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0,1fr) 300px',
-        gap: 20,
-        alignItems: 'start',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
+        gap: 16,
       }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))',
-          gap: 16,
-        }}>
-          {departments.map(dept => (
-            <DepartmentCard
-              key={dept.department_id}
-              dept={dept}
-              metrics={departmentMetrics[dept.department_id]}
-              onAnalyze={onAnalyze}
-              analyzing={analyzingId === dept.department_id}
-            />
-          ))}
-        </div>
-        <SeasonalPanel risks={seasonalRisks} />
+        {departments.map(dept => (
+          <DepartmentCard
+            key={dept.department_id}
+            dept={dept}
+            metrics={departmentMetrics[dept.department_id]}
+            benchmarks={departmentBenchmarks[dept.department_id]}
+            onAnalyze={onAnalyze}
+            analyzing={analyzingId === dept.department_id}
+            currentMonth={currentMonth}
+          />
+        ))}
+      </div>
+
+      {/* Seasonal forecast below */}
+      <div style={{ marginTop: 28 }}>
+        <SeasonalPanel risks={seasonalRisks} currentMonth={currentMonth} />
       </div>
     </div>
   )
@@ -365,12 +491,7 @@ function CausalChain({ chain }) {
       background: C.card, border: `1px solid ${C.border}`,
       borderRadius: 12, padding: 22, marginBottom: 20,
     }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: C.txt3,
-        textTransform: 'uppercase', letterSpacing: 1, marginBottom: 16,
-      }}>
-        Identified Causal Chain
-      </div>
+      <SectionLabel>Identified Causal Chain</SectionLabel>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         {steps.map((step, i) => (
           <Fragment key={i}>
@@ -398,6 +519,7 @@ function CausalChain({ chain }) {
 function CECard({ rec }) {
   const [open, setOpen] = useState(false)
   const color = urgencyColor(rec.urgency_score)
+  const refBadges = findReferenceBadges(rec.reasoning)
 
   const timing = {
     immediate:    { label: 'Immediate',    color: C.red },
@@ -438,7 +560,6 @@ function CECard({ rec }) {
           </div>
           <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
             <Badge label={timing.label} color={timing.color} />
-            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(255,255,255,0.05)" />
             <Badge label={urgencyLabel(rec.urgency_score)} color={color} />
           </div>
         </div>
@@ -451,11 +572,162 @@ function CECard({ rec }) {
       {/* Expanded reasoning */}
       {open && (
         <div style={{
-          marginTop: 14, paddingTop: 14,
+          marginTop: 16, paddingTop: 16,
           borderTop: `1px solid ${C.border}`,
-          fontSize: 13, color: C.txt2, lineHeight: 1.65,
         }}>
-          {rec.reasoning}
+          <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.75 }}>
+            {rec.reasoning}
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(255,255,255,0.05)" />
+          </div>
+          {refBadges.length > 0 && (
+            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
+              {refBadges.map(ref => (
+                <span key={ref} style={{
+                  fontSize: 10, fontWeight: 600,
+                  color: C.blueLt,
+                  background: `${C.blue}15`,
+                  border: `1px solid ${C.blue}30`,
+                  borderRadius: 4, padding: '2px 8px',
+                }}>
+                  {ref}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Benchmark Comparison Bars ───────────────────────────────────────────────
+
+function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
+  const m = metrics?.find(r => r.month === currentMonth)
+  if (!m || !benchmarks || Object.keys(benchmarks).length === 0) return null
+
+  const items = Object.entries(benchmarks).map(([key, bench]) => {
+    const actual = m[key]
+    if (actual == null) return null
+    const higherIsBetter = key === 'handoff_documentation_score'
+    const passing = higherIsBetter ? actual >= bench.target : actual <= bench.target
+    return { key, ...bench, actual, passing, higherIsBetter }
+  }).filter(Boolean)
+
+  return (
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`,
+      borderRadius: 12, padding: 22, marginBottom: 20,
+    }}>
+      <SectionLabel>Benchmark Comparison</SectionLabel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {items.map(item => {
+          const maxVal = item.higherIsBetter
+            ? Math.max(item.actual, item.target, 100)
+            : Math.max(item.actual, item.target) * 1.3
+          const actualPct = (item.actual / maxVal) * 100
+          const targetPct = (item.target / maxVal) * 100
+
+          return (
+            <div key={item.key}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                <span style={{ fontSize: 13, color: C.txt2 }}>{item.label}</span>
+                <span style={{ fontSize: 12, color: C.txt3 }}>
+                  {key_format(item.key, item.actual)} vs {key_format(item.key, item.target)} ({item.source})
+                </span>
+              </div>
+              <div style={{
+                position: 'relative', height: 8,
+                background: 'rgba(255,255,255,0.04)',
+                borderRadius: 4, overflow: 'visible',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(actualPct, 100)}%`,
+                  background: item.passing ? C.green : C.red,
+                  borderRadius: 4,
+                  transition: 'width 0.4s ease',
+                  opacity: 0.7,
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  left: `${Math.min(targetPct, 100)}%`,
+                  top: -3, height: 14, width: 2,
+                  background: C.txt3,
+                  borderRadius: 1,
+                }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── SOAP Notes Section ──────────────────────────────────────────────────────
+
+function SOAPNotesSection({ notes }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!notes || notes.length === 0) return null
+
+  return (
+    <div style={{
+      background: C.card, border: `1px solid ${C.border}`,
+      borderRadius: 12, padding: 22, marginBottom: 20,
+    }}>
+      <div
+        onClick={() => setExpanded(e => !e)}
+        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+      >
+        <SectionLabel>Clinical Documentation Samples · {notes.length} notes</SectionLabel>
+        <span style={{ color: C.txt4, fontSize: 11 }}>{expanded ? '▲' : '▼'}</span>
+      </div>
+
+      {expanded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
+          {notes.map(note => (
+            <div key={note.note_id} style={{
+              border: `1px solid ${C.border}`,
+              borderRadius: 10, padding: 18,
+              background: 'rgba(255,255,255,0.015)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: C.txt1 }}>{note.note_type}</span>
+                  <span style={{ fontSize: 12, color: C.txt3, marginLeft: 10 }}>{note.note_id}</span>
+                </div>
+                <div style={{ fontSize: 12, color: C.txt3 }}>
+                  {note.date} · {note.provider}
+                </div>
+              </div>
+
+              {[
+                { label: 'S', content: note.subjective, color: C.blue },
+                { label: 'O', content: note.objective, color: C.orange },
+                { label: 'A', content: note.assessment, color: C.yellow },
+                { label: 'P', content: note.plan, color: C.green },
+              ].map(({ label, content, color }) => (
+                <div key={label} style={{ marginBottom: 10 }}>
+                  <div style={{
+                    display: 'inline-block',
+                    fontSize: 10, fontWeight: 800,
+                    color, background: `${color}15`,
+                    border: `1px solid ${color}30`,
+                    borderRadius: 3, padding: '1px 6px',
+                    marginBottom: 4,
+                  }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.6, paddingLeft: 4 }}>
+                    {content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -490,20 +762,15 @@ const CustomTooltip = ({ active, payload, label }) => {
   )
 }
 
-function MetricsTrend({ metrics }) {
-  const data = getLast6Months(metrics)
+function MetricsTrend({ metrics, currentMonth }) {
+  const data = getLast6Months(metrics, currentMonth)
 
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`,
       borderRadius: 12, padding: 22, marginBottom: 20,
     }}>
-      <div style={{
-        fontSize: 11, fontWeight: 700, color: C.txt3,
-        textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14,
-      }}>
-        6-Month EMR Trend
-      </div>
+      <SectionLabel>6-Month EMR Trend</SectionLabel>
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 18, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -552,7 +819,7 @@ function MetricsTrend({ metrics }) {
 
 // ─── Department Detail ────────────────────────────────────────────────────────
 
-function DepartmentDetail({ analysis, metrics, onBack }) {
+function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, currentMonth }) {
   return (
     <div style={{ padding: '32px 28px', maxWidth: 920, margin: '0 auto' }}>
       {/* Back */}
@@ -572,19 +839,19 @@ function DepartmentDetail({ analysis, metrics, onBack }) {
       </button>
 
       {/* Department header */}
-      <div style={{ marginBottom: 24 }}>
+      <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>
-          AI Analysis · {MONTH_FULL[CURRENT_MONTH]} 2025
+          AI Analysis · {MONTH_FULL[currentMonth]} 2025
         </div>
-        <h1 style={{ margin: '0 0 14px', fontSize: 26, fontWeight: 700, color: C.txt1 }}>
+        <h1 style={{ margin: '0 0 16px', fontSize: 26, fontWeight: 700, color: C.txt1 }}>
           {analysis.department_name}
         </h1>
 
         {/* Risk summary */}
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
-          borderRadius: 12, padding: '18px 22px',
-          fontSize: 14, color: C.txt2, lineHeight: 1.7,
+          borderRadius: 12, padding: '20px 24px',
+          fontSize: 14, color: C.txt2, lineHeight: 1.8,
         }}>
           {analysis.risk_summary}
         </div>
@@ -593,17 +860,18 @@ function DepartmentDetail({ analysis, metrics, onBack }) {
       {/* Causal chain */}
       {analysis.causal_chain && <CausalChain chain={analysis.causal_chain} />}
 
+      {/* Benchmark comparison */}
+      {benchmarks && <BenchmarkBars metrics={metrics} benchmarks={benchmarks} currentMonth={currentMonth} />}
+
       {/* 6-month trend */}
-      {metrics && <MetricsTrend metrics={metrics} />}
+      {metrics && <MetricsTrend metrics={metrics} currentMonth={currentMonth} />}
+
+      {/* SOAP Notes */}
+      <SOAPNotesSection notes={soapNotes} />
 
       {/* CE Recommendations */}
-      <div>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: C.txt3,
-          textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14,
-        }}>
-          CE Recommendations &nbsp;·&nbsp; {analysis.recommendations.length} items
-        </div>
+      <div style={{ marginTop: 8 }}>
+        <SectionLabel>CE Recommendations · {analysis.recommendations.length} items</SectionLabel>
         {[...analysis.recommendations]
           .sort((a, b) => b.urgency_score - a.urgency_score)
           .map((rec, i) => <CECard key={i} rec={rec} />)
@@ -637,7 +905,7 @@ function ErrorScreen({ message }) {
         background: C.card, border: `1px solid ${C.red}40`,
         borderRadius: 12, padding: 36, maxWidth: 420, textAlign: 'center',
       }}>
-        <div style={{ fontSize: 36, marginBottom: 14 }}>⚠</div>
+        <div style={{ fontSize: 36, marginBottom: 14 }}>!</div>
         <div style={{ fontSize: 15, fontWeight: 600, color: C.red, marginBottom: 8 }}>Connection Error</div>
         <div style={{ fontSize: 13, color: C.txt3, lineHeight: 1.6 }}>{message}</div>
       </div>
@@ -651,11 +919,14 @@ export default function App() {
   const [view, setView]               = useState('dashboard')
   const [departments, setDepartments] = useState([])
   const [deptMetrics, setDeptMetrics] = useState({})
+  const [deptBenchmarks, setDeptBenchmarks] = useState({})
+  const [deptSoapNotes, setDeptSoapNotes] = useState({})
   const [seasonalRisks, setSeasonalRisks] = useState([])
-  const [selected, setSelected]       = useState(null)   // { analysis, metrics }
+  const [selected, setSelected]       = useState(null)
   const [analyzingId, setAnalyzingId] = useState(null)
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
+  const [currentMonth, setCurrentMonth] = useState(3)
 
   // Initial data load
   useEffect(() => {
@@ -663,21 +934,41 @@ export default function App() {
       try {
         const [depts, seasonal] = await Promise.all([
           fetch(`${API}/departments`).then(r => { if (!r.ok) throw new Error(`${r.status}`); return r.json() }),
-          fetch(`${API}/seasonal/${CURRENT_MONTH}`).then(r => r.json()),
+          fetch(`${API}/seasonal/${currentMonth}`).then(r => r.json()),
         ])
         setDepartments(depts)
         setSeasonalRisks(seasonal.seasonal_risks ?? [])
 
-        // Fetch all department metrics in parallel
-        const entries = await Promise.all(
-          depts.map(d =>
-            fetch(`${API}/departments/${d.department_id}/metrics`)
-              .then(r => r.json())
-              .then(data => [d.department_id, data.metrics ?? []])
-              .catch(() => [d.department_id, []])
-          )
-        )
-        setDeptMetrics(Object.fromEntries(entries))
+        // Fetch metrics, benchmarks, and SOAP notes in parallel
+        const [metricsEntries, benchmarkEntries, soapEntries] = await Promise.all([
+          Promise.all(
+            depts.map(d =>
+              fetch(`${API}/departments/${d.department_id}/metrics`)
+                .then(r => r.json())
+                .then(data => [d.department_id, data.metrics ?? []])
+                .catch(() => [d.department_id, []])
+            )
+          ),
+          Promise.all(
+            depts.map(d =>
+              fetch(`${API}/departments/${d.department_id}/benchmarks`)
+                .then(r => r.json())
+                .then(data => [d.department_id, data.benchmarks ?? {}])
+                .catch(() => [d.department_id, {}])
+            )
+          ),
+          Promise.all(
+            depts.map(d =>
+              fetch(`${API}/departments/${d.department_id}/soap-notes`)
+                .then(r => r.json())
+                .then(data => [d.department_id, data.soap_notes ?? []])
+                .catch(() => [d.department_id, []])
+            )
+          ),
+        ])
+        setDeptMetrics(Object.fromEntries(metricsEntries))
+        setDeptBenchmarks(Object.fromEntries(benchmarkEntries))
+        setDeptSoapNotes(Object.fromEntries(soapEntries))
       } catch (err) {
         setError(`Failed to connect to the ClearPath backend (${err.message}). Check that the Railway service is running.`)
       } finally {
@@ -687,20 +978,34 @@ export default function App() {
     init()
   }, [])
 
+  // Re-fetch seasonal risks when month changes
+  useEffect(() => {
+    if (loading) return
+    fetch(`${API}/seasonal/${currentMonth}`)
+      .then(r => r.json())
+      .then(data => setSeasonalRisks(data.seasonal_risks ?? []))
+      .catch(() => {})
+  }, [currentMonth, loading])
+
   async function handleAnalyze(deptId) {
     setAnalyzingId(deptId)
     try {
       const res = await fetch(`${API}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ department_id: deptId, current_month: CURRENT_MONTH }),
+        body: JSON.stringify({ department_id: deptId, current_month: currentMonth }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.detail ?? `HTTP ${res.status}`)
       }
       const analysis = await res.json()
-      setSelected({ analysis, metrics: deptMetrics[deptId] ?? [] })
+      setSelected({
+        analysis,
+        metrics: deptMetrics[deptId] ?? [],
+        soapNotes: deptSoapNotes[deptId] ?? [],
+        benchmarks: deptBenchmarks[deptId] ?? {},
+      })
       setView('detail')
     } catch (err) {
       alert(`Analysis failed: ${err.message}`)
@@ -712,6 +1017,7 @@ export default function App() {
   return (
     <div style={{
       minHeight: '100vh',
+      marginRight: 380,
       background: C.bg,
       color: C.txt1,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "IBM Plex Sans", sans-serif',
@@ -726,15 +1032,21 @@ export default function App() {
         <DepartmentDetail
           analysis={selected.analysis}
           metrics={selected.metrics}
+          soapNotes={selected.soapNotes}
+          benchmarks={selected.benchmarks}
           onBack={() => setView('dashboard')}
+          currentMonth={currentMonth}
         />
       ) : (
         <Dashboard
           departments={departments}
           departmentMetrics={deptMetrics}
+          departmentBenchmarks={deptBenchmarks}
           seasonalRisks={seasonalRisks}
           onAnalyze={handleAnalyze}
           analyzingId={analyzingId}
+          currentMonth={currentMonth}
+          onMonthChange={setCurrentMonth}
         />
       )}
 
@@ -742,9 +1054,8 @@ export default function App() {
         @keyframes spin  { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100% { opacity:.3 } 50% { opacity:.7 } }
 
-        @media (max-width: 768px) {
-          /* Stack seasonal panel below department grid */
-          .dashboard-grid { grid-template-columns: 1fr !important; }
+        @media (max-width: 900px) {
+          #wxo-chat { display: none !important; }
         }
       `}</style>
     </div>
