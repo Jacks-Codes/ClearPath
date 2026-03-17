@@ -361,22 +361,34 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         }
       </div>
 
-      {worst && (
-        <div style={{
-              background: worst.gap > 0 ? 'rgba(218,30,40,0.06)' : 'rgba(36,161,72,0.08)',
-          border: `1px solid ${worst.gap > 0 ? C.red : C.green}30`,
-          borderRadius: 8, padding: '10px 14px',
-        }}>
-          <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>{worst.label}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: worst.gap > 0 ? C.red : C.green }}>
-              {worst.higherIsBetter ? `${worst.value}/100` : key_format(worst.key, worst.value)}
-            </span>
-            <span style={{ fontSize: 11, color: C.txt3 }}>
-              target: {worst.higherIsBetter ? `${worst.target}/100` : key_format(worst.key, worst.target)}
-            </span>
-          </div>
-          <div style={{ fontSize: 10, color: C.txt4, marginTop: 3 }}>{worst.source}</div>
+      {m && benchmarks && Object.keys(benchmarks).length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {Object.entries(benchmarks).map(([key, bench]) => {
+            const val = m[key]
+            if (val == null) return null
+            const higherIsBetter = key === 'handoff_documentation_score'
+            const passing = higherIsBetter ? val >= bench.target : val <= bench.target
+            const color = passing ? C.green : C.red
+            return (
+              <div key={key} style={{
+                background: passing ? 'rgba(36,161,72,0.06)' : 'rgba(218,30,40,0.05)',
+                border: `1px solid ${color}20`,
+                borderRadius: 6, padding: '7px 12px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: 11, color: C.txt2, fontWeight: 500 }}>{bench.label}</span>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color }}>
+                    {higherIsBetter ? `${val}/100` : key_format(key, val)}
+                  </span>
+                  <span style={{ fontSize: 10, color: C.txt4 }}>
+                    vs {higherIsBetter ? `${bench.target}/100` : key_format(key, bench.target)}
+                  </span>
+                  <span style={{ fontSize: 9, color: C.txt4 }}>({bench.source})</span>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
