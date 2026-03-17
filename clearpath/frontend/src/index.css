@@ -3,12 +3,12 @@
 body {
   margin: 0;
   padding: 0;
-  background: #070d1a;
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #070d1a; }
-::-webkit-scrollbar-thumb { background: #1e2d4a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #2a3f6a; }
+::-webkit-scrollbar-track { background: #f4f4f4; }
+::-webkit-scrollbar-thumb { background: #c6c6c6; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8d8d8d; }

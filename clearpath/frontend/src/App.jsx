@@ -18,24 +18,24 @@ const KNOWN_STANDARDS = [
   'Safe Practice', 'Morse', 'NEWS2', 'MEWS', 'SOFA', 'GINA',
 ]
 
-// IBM Carbon palette
+// IBM Carbon palette — lite mode (mirrors ibm.com / White theme)
 const C = {
-  blue:    '#0062ff',
+  blue:    '#0f62fe',
   blueLt:  '#4589ff',
-  blueDim: 'rgba(0,98,255,0.12)',
+  blueDim: 'rgba(15,98,254,0.08)',
   red:     '#da1e28',
   orange:  '#ff832b',
   yellow:  '#f1c21b',
   green:   '#24a148',
-  bg:      '#070d1a',
-  card:    '#0f1829',
-  cardHov: '#111f38',
-  border:  'rgba(30,64,120,0.4)',
-  borderB: 'rgba(0,98,255,0.4)',
-  txt1:    '#e8f0ff',
-  txt2:    '#8da8cc',
-  txt3:    '#6b83a8',
-  txt4:    '#3d5278',
+  bg:      '#ffffff',
+  card:    '#f4f4f4',
+  cardHov: '#e8e8e8',
+  border:  '#e0e0e0',
+  borderB: 'rgba(15,98,254,0.5)',
+  txt1:    '#161616',
+  txt2:    '#525252',
+  txt3:    '#6f6f6f',
+  txt4:    '#8d8d8d',
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -169,8 +169,8 @@ function Header({ onDashboard }) {
       borderBottom: `1px solid ${C.border}`,
       padding: '0 28px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'rgba(7,13,26,0.96)',
-      backdropFilter: 'blur(14px)',
+      background: '#ffffff',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       position: 'sticky', top: 0, zIndex: 100,
     }}>
       <div
@@ -178,11 +178,10 @@ function Header({ onDashboard }) {
         onClick={onDashboard}
       >
         <div style={{
-          width: 34, height: 34, borderRadius: 8,
-          background: `linear-gradient(135deg, ${C.blue}, ${C.blueLt})`,
+          width: 34, height: 34, borderRadius: 6,
+          background: C.blue,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 15, fontWeight: 800, color: '#fff',
-          boxShadow: `0 0 14px ${C.blue}50`,
+          fontSize: 15, fontWeight: 700, color: '#fff',
         }}>CP</div>
         <div>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.txt1, letterSpacing: '-0.3px', lineHeight: 1 }}>ClearPath</div>
@@ -193,13 +192,12 @@ function Header({ onDashboard }) {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 7,
         background: C.blueDim,
-        border: `1px solid ${C.blue}40`,
-        borderRadius: 20, padding: '5px 14px',
-        fontSize: 11, color: C.blueLt, fontWeight: 500,
+        border: `1px solid rgba(15,98,254,0.25)`,
+        borderRadius: 4, padding: '6px 12px',
+        fontSize: 12, color: C.blue, fontWeight: 500,
       }}>
         <div style={{
-          width: 7, height: 7, borderRadius: '50%', background: C.blue,
-          boxShadow: `0 0 7px ${C.blue}`,
+          width: 6, height: 6, borderRadius: '50%', background: C.blue,
         }} />
         Powered by IBM watsonx.ai
       </div>
@@ -212,23 +210,23 @@ function Header({ onDashboard }) {
 function OrchestrateBanner() {
   return (
     <div style={{
-      background: `linear-gradient(135deg, ${C.blue}12, ${C.blueLt}08)`,
-      border: `1px solid ${C.blue}25`,
-      borderRadius: 10,
-      padding: '12px 20px',
+      background: C.blueDim,
+      border: `1px solid rgba(15,98,254,0.2)`,
+      borderRadius: 4,
+      padding: '14px 20px',
       display: 'flex', alignItems: 'center', gap: 12,
       marginBottom: 24,
     }}>
       <div style={{
-        width: 32, height: 32, borderRadius: 8,
-        background: `${C.blue}18`,
-        border: `1px solid ${C.blue}30`,
+        width: 32, height: 32, borderRadius: 4,
+        background: 'rgba(15,98,254,0.12)',
+        border: `1px solid rgba(15,98,254,0.25)`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 14, flexShrink: 0,
       }}>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7zm0 12.5A5.506 5.506 0 012.5 8 5.506 5.506 0 018 2.5 5.506 5.506 0 0113.5 8 5.506 5.506 0 018 13.5z" fill={C.blueLt}/>
-          <path d="M8 4.5a1 1 0 00-1 1v3a1 1 0 001 1h2.5a1 1 0 000-2H9V5.5a1 1 0 00-1-1z" fill={C.blueLt}/>
+          <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7zm0 12.5A5.506 5.506 0 012.5 8 5.506 5.506 0 018 2.5 5.506 5.506 0 0113.5 8 5.506 5.506 0 018 13.5z" fill={C.blue}/>
+          <path d="M8 4.5a1 1 0 00-1 1v3a1 1 0 001 1h2.5a1 1 0 000-2H9V5.5a1 1 0 00-1-1z" fill={C.blue}/>
         </svg>
       </div>
       <div>
@@ -258,7 +256,7 @@ function MonthSelector({ currentMonth, onChange }) {
               padding: '6px 14px',
               borderRadius: 20,
               border: active ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
-              background: active ? `${C.blue}20` : 'transparent',
+              background: active ? C.blueDim : 'transparent',
               color: active ? C.blue : C.txt3,
               fontSize: 12, fontWeight: active ? 700 : 500,
               cursor: 'pointer',
@@ -282,7 +280,7 @@ function RiskRing({ score }) {
   return (
     <div style={{ position: 'relative', width: 58, height: 58, flexShrink: 0 }}>
       <svg width="58" height="58" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="4" />
+        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="4" />
         <circle cx="29" cy="29" r={r} fill="none" stroke={color} strokeWidth="4"
           strokeDasharray={`${(score / 10) * circ} ${circ}`}
           strokeLinecap="round"
@@ -314,10 +312,11 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
       onMouseLeave={() => setHov(false)}
       style={{
         background: hov ? C.cardHov : C.card,
-        border: `1px solid ${hov ? C.borderB : C.border}`,
-        borderRadius: 12, padding: 22,
+        border: `1px solid ${hov ? 'rgba(15,98,254,0.3)' : C.border}`,
+        borderRadius: 4, padding: 22,
         transition: 'all 0.18s',
         display: 'flex', flexDirection: 'column', gap: 16,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -327,15 +326,15 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         </div>
         {score !== null
           ? <RiskRing score={score} />
-          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#1a2540', opacity: 0.5 }}
+          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#e0e0e0', opacity: 0.6 }}
               className="pulse" />
         }
       </div>
 
       {worst && (
         <div style={{
-          background: `${worst.gap > 0 ? C.red : C.green}08`,
-          border: `1px solid ${worst.gap > 0 ? C.red : C.green}25`,
+              background: worst.gap > 0 ? 'rgba(218,30,40,0.06)' : 'rgba(36,161,72,0.08)',
+          border: `1px solid ${worst.gap > 0 ? C.red : C.green}30`,
           borderRadius: 8, padding: '10px 14px',
         }}>
           <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>{worst.label}</div>
@@ -356,8 +355,8 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         disabled={analyzing}
         style={{
           width: '100%', padding: '10px 0',
-          background: analyzing ? `${C.blue}18` : hov ? `${C.blue}25` : `${C.blue}15`,
-          border: `1px solid ${C.blue}50`,
+          background: analyzing ? C.blueDim : hov ? 'rgba(15,98,254,0.12)' : C.blueDim,
+          border: `1px solid rgba(15,98,254,0.35)`,
           borderRadius: 8,
           color: analyzing ? C.blueLt : C.blue,
           fontSize: 13, fontWeight: 600,
@@ -397,7 +396,8 @@ function SeasonalPanel({ risks, currentMonth }) {
                 background: C.card,
                 border: `1px solid ${C.border}`,
                 borderLeft: `4px solid ${riskLevelColor(risk.risk_level)}`,
-                borderRadius: 10, padding: '16px 18px',
+                borderRadius: 4, padding: '16px 18px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: C.txt1 }}>{risk.name}</span>
@@ -434,15 +434,15 @@ function SummaryBanner({ departments, departmentMetrics, seasonalRisks, currentM
     <div style={{
       display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24,
     }}>
-      {[
+        {[
         { value: elevatedCount, label: 'departments at elevated risk', color: elevatedCount > 0 ? C.orange : C.green },
         { value: seasonalRisks.length, label: 'seasonal alerts active', color: seasonalRisks.length > 2 ? C.orange : C.blue },
         { value: `${totalCEHours}+`, label: 'CE hours recommended', color: C.blue },
       ].map(({ value, label, color }) => (
         <div key={label} style={{
-          background: `${color}10`,
-          border: `1px solid ${color}30`,
-          borderRadius: 10, padding: '12px 20px',
+          background: color === C.blue ? C.blueDim : color === C.green ? 'rgba(36,161,72,0.08)' : color === C.orange ? 'rgba(255,131,43,0.08)' : C.blueDim,
+          border: `1px solid ${color}40`,
+          borderRadius: 4, padding: '14px 20px',
           display: 'flex', alignItems: 'center', gap: 10,
           flex: '1 1 200px',
         }}>
@@ -520,7 +520,8 @@ function CausalChain({ chain }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: 22, marginBottom: 20,
+      borderRadius: 4, padding: 22, marginBottom: 20,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
     }}>
       <SectionLabel>Identified Causal Chain</SectionLabel>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
@@ -565,7 +566,7 @@ function CECard({ rec }) {
         background: C.card,
         border: `1px solid ${C.border}`,
         borderLeft: `4px solid ${color}`,
-        borderRadius: 12, padding: '18px 20px',
+        borderRadius: 4, padding: '18px 20px',
         marginBottom: 10, cursor: 'pointer',
         transition: 'background 0.15s',
       }}
@@ -607,7 +608,7 @@ function CECard({ rec }) {
             {rec.reasoning}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(255,255,255,0.05)" />
+            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(0,0,0,0.06)" />
           </div>
           {refBadges.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
@@ -615,8 +616,8 @@ function CECard({ rec }) {
                 <span key={ref} style={{
                   fontSize: 10, fontWeight: 600,
                   color: C.blueLt,
-                  background: `${C.blue}15`,
-                  border: `1px solid ${C.blue}30`,
+                  background: C.blueDim,
+                  border: `1px solid rgba(15,98,254,0.25)`,
                   borderRadius: 4, padding: '2px 8px',
                 }}>
                   {ref}
@@ -647,7 +648,8 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: 22, marginBottom: 20,
+      borderRadius: 4, padding: 22, marginBottom: 20,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
     }}>
       <SectionLabel>Benchmark Comparison</SectionLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -668,7 +670,7 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
               </div>
               <div style={{
                 position: 'relative', height: 8,
-                background: 'rgba(255,255,255,0.04)',
+                background: 'rgba(0,0,0,0.06)',
                 borderRadius: 4, overflow: 'visible',
               }}>
                 <div style={{
@@ -704,7 +706,8 @@ function SOAPNotesSection({ notes }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: 22, marginBottom: 20,
+      borderRadius: 4, padding: 22, marginBottom: 20,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
     }}>
       <div
         onClick={() => setExpanded(e => !e)}
@@ -720,7 +723,7 @@ function SOAPNotesSection({ notes }) {
             <div key={note.note_id} style={{
               border: `1px solid ${C.border}`,
               borderRadius: 10, padding: 18,
-              background: 'rgba(255,255,255,0.015)',
+              background: 'rgba(0,0,0,0.02)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
@@ -774,10 +777,10 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#131929',
+      background: '#ffffff',
       border: `1px solid ${C.border}`,
-      borderRadius: 8, padding: '10px 14px',
-      fontSize: 12, minWidth: 160,
+      borderRadius: 4, padding: '10px 14px',
+      fontSize: 12, minWidth: 160, boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
     }}>
       <div style={{ color: C.txt1, fontWeight: 600, marginBottom: 6 }}>{label}</div>
       {payload.map(p => (
@@ -796,7 +799,8 @@ function MetricsTrend({ metrics, currentMonth }) {
   return (
     <div style={{
       background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 12, padding: 22, marginBottom: 20,
+      borderRadius: 4, padding: 22, marginBottom: 20,
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
     }}>
       <SectionLabel>6-Month EMR Trend</SectionLabel>
 
@@ -811,12 +815,12 @@ function MetricsTrend({ metrics, currentMonth }) {
 
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
           <XAxis dataKey="label" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="L" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 30]} width={32} />
           <YAxis yAxisId="R" orientation="right" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[50, 100]} width={36} />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine yAxisId="L" y={15} stroke={`${C.red}40`} strokeDasharray="4 4" />
+          <ReferenceLine yAxisId="L" y={15} stroke="rgba(218,30,40,0.4)" strokeDasharray="4 4" />
           <Line yAxisId="L" type="monotone" dataKey="readmission_rate_30d" stroke={C.red} strokeWidth={2} dot={false} />
           <Line yAxisId="L" type="monotone" dataKey="medication_error_rate" stroke={C.orange} strokeWidth={2} dot={false} />
           <Line yAxisId="R" type="monotone" dataKey="handoff_documentation_score" stroke={C.blue} strokeWidth={2} dot={false} />
@@ -843,7 +847,7 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
           display: 'inline-flex', alignItems: 'center', gap: 7,
           transition: 'all 0.15s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.color = C.txt1; e.currentTarget.style.borderColor = C.borderB }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.txt1; e.currentTarget.style.borderColor = C.blue }}
         onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.border }}
       >
         ← Back to Dashboard
@@ -859,8 +863,9 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
 
         <div style={{
           background: C.card, border: `1px solid ${C.border}`,
-          borderRadius: 12, padding: '20px 24px',
+          borderRadius: 4, padding: '20px 24px',
           fontSize: 14, color: C.txt2, lineHeight: 1.8,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
         }}>
           {analysis.risk_summary}
         </div>
@@ -1020,7 +1025,7 @@ export default function App() {
       minHeight: '100vh',
       background: C.bg,
       color: C.txt1,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "IBM Plex Sans", sans-serif',
+      fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     }}>
       <Header onDashboard={() => setView('dashboard')} />
 
