@@ -1,3 +1,8 @@
+# Node
+node_modules/
+dist/
+.vite/
+
 # Python
 venv/
 __pycache__/
