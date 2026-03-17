@@ -19,19 +19,19 @@ DEPARTMENTS = {
 # Month indices 0–11 correspond to Jan–Dec
 EMR_DATA: dict[str, list[dict]] = {
     "icu": [
-        # High acuity — elevated fall rates due to sedation/delirium, tight ratios, sepsis vigilance
-        {"month": 1,  "patient_fall_rate": 3.2, "medication_error_rate": 4.1, "readmission_rate_30d": 18.5, "handoff_documentation_score": 84, "nurse_patient_ratio": 2.1, "sepsis_response_time_minutes": 28},
-        {"month": 2,  "patient_fall_rate": 3.5, "medication_error_rate": 4.4, "readmission_rate_30d": 19.2, "handoff_documentation_score": 82, "nurse_patient_ratio": 2.2, "sepsis_response_time_minutes": 31},
-        {"month": 3,  "patient_fall_rate": 3.0, "medication_error_rate": 3.9, "readmission_rate_30d": 17.8, "handoff_documentation_score": 86, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 26},
+        # High acuity — clear deterioration trend Oct→Mar (staffing strain, winter surge)
+        {"month": 1,  "patient_fall_rate": 2.9, "medication_error_rate": 3.5, "readmission_rate_30d": 16.9, "handoff_documentation_score": 84, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 26},
+        {"month": 2,  "patient_fall_rate": 3.2, "medication_error_rate": 3.8, "readmission_rate_30d": 18.1, "handoff_documentation_score": 81, "nurse_patient_ratio": 2.1, "sepsis_response_time_minutes": 28},
+        {"month": 3,  "patient_fall_rate": 3.5, "medication_error_rate": 4.0, "readmission_rate_30d": 18.5, "handoff_documentation_score": 80, "nurse_patient_ratio": 2.1, "sepsis_response_time_minutes": 28},
         {"month": 4,  "patient_fall_rate": 2.8, "medication_error_rate": 3.7, "readmission_rate_30d": 17.1, "handoff_documentation_score": 87, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 25},
         {"month": 5,  "patient_fall_rate": 2.9, "medication_error_rate": 3.8, "readmission_rate_30d": 17.3, "handoff_documentation_score": 88, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 24},
         {"month": 6,  "patient_fall_rate": 3.1, "medication_error_rate": 4.0, "readmission_rate_30d": 18.0, "handoff_documentation_score": 85, "nurse_patient_ratio": 2.1, "sepsis_response_time_minutes": 27},
         {"month": 7,  "patient_fall_rate": 3.4, "medication_error_rate": 4.3, "readmission_rate_30d": 19.0, "handoff_documentation_score": 83, "nurse_patient_ratio": 2.3, "sepsis_response_time_minutes": 30},
         {"month": 8,  "patient_fall_rate": 3.3, "medication_error_rate": 4.2, "readmission_rate_30d": 18.7, "handoff_documentation_score": 84, "nurse_patient_ratio": 2.2, "sepsis_response_time_minutes": 29},
-        {"month": 9,  "patient_fall_rate": 3.0, "medication_error_rate": 3.9, "readmission_rate_30d": 18.1, "handoff_documentation_score": 86, "nurse_patient_ratio": 2.1, "sepsis_response_time_minutes": 27},
-        {"month": 10, "patient_fall_rate": 2.9, "medication_error_rate": 3.8, "readmission_rate_30d": 17.6, "handoff_documentation_score": 87, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 25},
-        {"month": 11, "patient_fall_rate": 3.3, "medication_error_rate": 4.2, "readmission_rate_30d": 19.0, "handoff_documentation_score": 83, "nurse_patient_ratio": 2.2, "sepsis_response_time_minutes": 32},
-        {"month": 12, "patient_fall_rate": 3.6, "medication_error_rate": 4.5, "readmission_rate_30d": 20.1, "handoff_documentation_score": 80, "nurse_patient_ratio": 2.4, "sepsis_response_time_minutes": 35},
+        {"month": 9,  "patient_fall_rate": 2.5, "medication_error_rate": 2.9, "readmission_rate_30d": 14.2, "handoff_documentation_score": 90, "nurse_patient_ratio": 1.9, "sepsis_response_time_minutes": 21},
+        {"month": 10, "patient_fall_rate": 2.1, "medication_error_rate": 2.6, "readmission_rate_30d": 13.2, "handoff_documentation_score": 91, "nurse_patient_ratio": 1.9, "sepsis_response_time_minutes": 21},
+        {"month": 11, "patient_fall_rate": 2.4, "medication_error_rate": 3.0, "readmission_rate_30d": 14.5, "handoff_documentation_score": 88, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 23},
+        {"month": 12, "patient_fall_rate": 2.7, "medication_error_rate": 3.3, "readmission_rate_30d": 15.8, "handoff_documentation_score": 86, "nurse_patient_ratio": 2.0, "sepsis_response_time_minutes": 24},
     ],
     "med_surg": [
         # Staffing strain visible in ratio and handoff scores; mid-year deterioration
@@ -49,19 +49,19 @@ EMR_DATA: dict[str, list[dict]] = {
         {"month": 12, "patient_fall_rate": 2.6, "medication_error_rate": 3.3, "readmission_rate_30d": 15.5, "handoff_documentation_score": 70, "nurse_patient_ratio": 5.9, "sepsis_response_time_minutes": 50},
     ],
     "ed": [
-        # Chronically low handoff documentation scores; high volume drives errors
-        {"month": 1,  "patient_fall_rate": 1.5, "medication_error_rate": 3.5, "readmission_rate_30d": 12.0, "handoff_documentation_score": 61, "nurse_patient_ratio": 4.5, "sepsis_response_time_minutes": 22},
-        {"month": 2,  "patient_fall_rate": 1.6, "medication_error_rate": 3.7, "readmission_rate_30d": 12.4, "handoff_documentation_score": 59, "nurse_patient_ratio": 4.6, "sepsis_response_time_minutes": 23},
+        # Clear deterioration Oct→Mar — handoff collapsing, sepsis response worsening
+        {"month": 1,  "patient_fall_rate": 1.3, "medication_error_rate": 3.0, "readmission_rate_30d": 11.5, "handoff_documentation_score": 65, "nurse_patient_ratio": 4.3, "sepsis_response_time_minutes": 20},
+        {"month": 2,  "patient_fall_rate": 1.5, "medication_error_rate": 3.2, "readmission_rate_30d": 12.1, "handoff_documentation_score": 62, "nurse_patient_ratio": 4.5, "sepsis_response_time_minutes": 22},
         {"month": 3,  "patient_fall_rate": 1.4, "medication_error_rate": 3.3, "readmission_rate_30d": 11.8, "handoff_documentation_score": 63, "nurse_patient_ratio": 4.4, "sepsis_response_time_minutes": 21},
         {"month": 4,  "patient_fall_rate": 1.3, "medication_error_rate": 3.2, "readmission_rate_30d": 11.5, "handoff_documentation_score": 65, "nurse_patient_ratio": 4.3, "sepsis_response_time_minutes": 20},
         {"month": 5,  "patient_fall_rate": 1.4, "medication_error_rate": 3.3, "readmission_rate_30d": 11.7, "handoff_documentation_score": 64, "nurse_patient_ratio": 4.4, "sepsis_response_time_minutes": 21},
         {"month": 6,  "patient_fall_rate": 1.7, "medication_error_rate": 3.9, "readmission_rate_30d": 12.8, "handoff_documentation_score": 57, "nurse_patient_ratio": 4.9, "sepsis_response_time_minutes": 25},
         {"month": 7,  "patient_fall_rate": 1.9, "medication_error_rate": 4.2, "readmission_rate_30d": 13.3, "handoff_documentation_score": 54, "nurse_patient_ratio": 5.2, "sepsis_response_time_minutes": 28},
         {"month": 8,  "patient_fall_rate": 1.8, "medication_error_rate": 4.1, "readmission_rate_30d": 13.0, "handoff_documentation_score": 55, "nurse_patient_ratio": 5.1, "sepsis_response_time_minutes": 27},
-        {"month": 9,  "patient_fall_rate": 1.6, "medication_error_rate": 3.7, "readmission_rate_30d": 12.3, "handoff_documentation_score": 60, "nurse_patient_ratio": 4.7, "sepsis_response_time_minutes": 24},
-        {"month": 10, "patient_fall_rate": 1.5, "medication_error_rate": 3.5, "readmission_rate_30d": 12.0, "handoff_documentation_score": 62, "nurse_patient_ratio": 4.5, "sepsis_response_time_minutes": 22},
-        {"month": 11, "patient_fall_rate": 1.7, "medication_error_rate": 3.8, "readmission_rate_30d": 12.6, "handoff_documentation_score": 58, "nurse_patient_ratio": 4.8, "sepsis_response_time_minutes": 24},
-        {"month": 12, "patient_fall_rate": 1.8, "medication_error_rate": 4.0, "readmission_rate_30d": 12.9, "handoff_documentation_score": 56, "nurse_patient_ratio": 5.0, "sepsis_response_time_minutes": 26},
+        {"month": 9,  "patient_fall_rate": 1.0, "medication_error_rate": 2.3, "readmission_rate_30d": 9.8,  "handoff_documentation_score": 78, "nurse_patient_ratio": 4.0, "sepsis_response_time_minutes": 16},
+        {"month": 10, "patient_fall_rate": 1.0, "medication_error_rate": 2.5, "readmission_rate_30d": 10.2, "handoff_documentation_score": 76, "nurse_patient_ratio": 4.1, "sepsis_response_time_minutes": 17},
+        {"month": 11, "patient_fall_rate": 1.1, "medication_error_rate": 2.7, "readmission_rate_30d": 10.8, "handoff_documentation_score": 72, "nurse_patient_ratio": 4.2, "sepsis_response_time_minutes": 18},
+        {"month": 12, "patient_fall_rate": 1.2, "medication_error_rate": 2.9, "readmission_rate_30d": 11.2, "handoff_documentation_score": 68, "nurse_patient_ratio": 4.3, "sepsis_response_time_minutes": 19},
     ],
     "oncology": [
         # Generally cleaner metrics; notable readmission spike in summer months (June–August)
@@ -111,8 +111,8 @@ BENCHMARKS = {
 SOAP_NOTES = {
     "icu": [
         {
-            "note_id": "ICU-2025-0312",
-            "date": "2025-03-04",
+            "note_id": "ICU-2026-0312",
+            "date": "2026-03-04",
             "patient_id": "PT-88421",
             "provider": "RN C. Martinez",
             "note_type": "Incident Report",
@@ -122,8 +122,8 @@ SOAP_NOTES = {
             "plan": "1) Mandatory bedside handoff verification for all vasoactive drips. 2) Escalate staffing concern to unit manager. 3) Schedule SBAR refresher training for night shift. 4) Implement 'critical med' flag in handoff template.",
         },
         {
-            "note_id": "ICU-2025-0287",
-            "date": "2025-02-18",
+            "note_id": "ICU-2026-0287",
+            "date": "2026-02-18",
             "patient_id": "PT-77103",
             "provider": "RN A. Thompson",
             "note_type": "Progress Note",
@@ -135,8 +135,8 @@ SOAP_NOTES = {
     ],
     "med_surg": [
         {
-            "note_id": "MS-2025-0445",
-            "date": "2025-03-08",
+            "note_id": "MS-2026-0445",
+            "date": "2026-03-08",
             "patient_id": "PT-91205",
             "provider": "RN J. Davis",
             "note_type": "Incident Report",
@@ -146,8 +146,8 @@ SOAP_NOTES = {
             "plan": "1) Immediate fall risk reassessment for all patients on unit. 2) Bed alarm compliance audit. 3) Call light placement standardization protocol. 4) Request staffing review — 1:6 ratio unsustainable for fall prevention. 5) Schedule AHRQ fall prevention bundle refresher.",
         },
         {
-            "note_id": "MS-2025-0398",
-            "date": "2025-02-22",
+            "note_id": "MS-2026-0398",
+            "date": "2026-02-22",
             "patient_id": "PT-84367",
             "provider": "RN K. Patel",
             "note_type": "Progress Note",
@@ -159,8 +159,8 @@ SOAP_NOTES = {
     ],
     "ed": [
         {
-            "note_id": "ED-2025-0621",
-            "date": "2025-03-10",
+            "note_id": "ED-2026-0621",
+            "date": "2026-03-10",
             "patient_id": "PT-95533",
             "provider": "RN M. Chen",
             "note_type": "Discharge Summary",
@@ -170,8 +170,8 @@ SOAP_NOTES = {
             "plan": "1) Initiate standing sepsis order set at triage for ESI-2 patients with SIRS criteria. 2) Escalate boarding situation to hospital administration — 8 boarders critically impacting ED throughput. 3) Request dedicated sepsis response nurse during high-census periods. 4) Schedule SEP-1 bundle compliance refresher for all ED nursing staff.",
         },
         {
-            "note_id": "ED-2025-0589",
-            "date": "2025-02-28",
+            "note_id": "ED-2026-0589",
+            "date": "2026-02-28",
             "patient_id": "PT-93201",
             "provider": "RN S. Williams",
             "note_type": "Incident Report",
@@ -183,8 +183,8 @@ SOAP_NOTES = {
     ],
     "oncology": [
         {
-            "note_id": "ONC-2025-0156",
-            "date": "2025-03-01",
+            "note_id": "ONC-2026-0156",
+            "date": "2026-03-01",
             "patient_id": "PT-82910",
             "provider": "RN L. Nguyen",
             "note_type": "Readmission Note",
@@ -194,8 +194,8 @@ SOAP_NOTES = {
             "plan": "1) Admit to isolation, start empiric broad-spectrum antibiotics per neutropenic fever protocol. 2) Implement mandatory teach-back for all oncology discharge education. 3) Revise discharge materials — specific numeric thresholds, visual aids, multilingual options. 4) Track discharge education time as quality metric (target: minimum 15 min for chemo patients).",
         },
         {
-            "note_id": "ONC-2025-0142",
-            "date": "2025-02-14",
+            "note_id": "ONC-2026-0142",
+            "date": "2026-02-14",
             "patient_id": "PT-80654",
             "provider": "RN R. Jackson",
             "note_type": "Progress Note",
@@ -229,7 +229,7 @@ def get_department_metrics(department_id: str, month: int) -> dict | None:
         return None
     for record in data:
         if record["month"] == month:
-            return {**record, "department_id": department_id, "department_name": DEPARTMENTS[department_id], "year": 2025}
+            return {**record, "department_id": department_id, "department_name": DEPARTMENTS[department_id], "year": 2026}
     return None
 
 
@@ -238,6 +238,6 @@ def get_all_months_for_department(department_id: str) -> list[dict] | None:
     if not data:
         return None
     return [
-        {**record, "department_id": department_id, "department_name": DEPARTMENTS[department_id], "year": 2025}
+        {**record, "department_id": department_id, "department_name": DEPARTMENTS[department_id], "year": 2026}
         for record in data
     ]
