@@ -56,18 +56,37 @@ function riskLevelColor(lvl) {
   return { critical: C.red, high: C.orange, moderate: C.yellow, low: C.green }[lvl] ?? C.txt3
 }
 
-function computeRiskScore(metrics, month) {
+function computeRiskScore(metrics, month, benchmarks) {
   const m = metrics.find(r => r.month === month) ?? metrics.at(-1)
-  if (!m) return 5
-  const n = [
-    Math.min(m.patient_fall_rate / 4, 1),
-    Math.min(m.medication_error_rate / 5, 1),
-    Math.min(m.readmission_rate_30d / 25, 1),
-    1 - Math.min(m.handoff_documentation_score / 100, 1),
-    Math.min(m.nurse_patient_ratio / 7, 1),
-    Math.min(m.sepsis_response_time_minutes / 60, 1),
-  ]
-  return Math.round((n.reduce((a, b) => a + b, 0) / n.length) * 10)
+  if (!m) return 3
+  if (!benchmarks || Object.keys(benchmarks).length === 0) {
+    // Fallback without benchmarks
+    const n = [
+      Math.min(m.patient_fall_rate / 4, 1),
+      Math.min(m.medication_error_rate / 5, 1),
+      Math.min(m.readmission_rate_30d / 25, 1),
+      1 - Math.min(m.handoff_documentation_score / 100, 1),
+      Math.min(m.nurse_patient_ratio / 7, 1),
+      Math.min(m.sepsis_response_time_minutes / 60, 1),
+    ]
+    return Math.round((n.reduce((a, b) => a + b, 0) / n.length) * 10)
+  }
+  // Benchmark-aware: measure gap from targets
+  const gaps = []
+  for (const [key, bench] of Object.entries(benchmarks)) {
+    const val = m[key]
+    if (val == null) continue
+    const higherIsBetter = key === 'handoff_documentation_score'
+    const gap = higherIsBetter
+      ? (bench.target - val) / bench.target
+      : (val - bench.target) / bench.target
+    gaps.push(Math.max(0, gap))
+  }
+  if (gaps.length === 0) return 3
+  const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length
+  const maxGap = Math.max(...gaps)
+  const blended = avgGap * 0.6 + maxGap * 0.4
+  return Math.max(1, Math.min(10, Math.round(1 + blended * 18)))
 }
 
 function getLast6Months(metrics, currentMonth) {
@@ -209,14 +228,24 @@ function Header({ onDashboard }) {
 
 function OrchestrateBanner() {
   return (
-    <div style={{
-      background: C.blueDim,
-      border: `1px solid rgba(15,98,254,0.2)`,
-      borderRadius: 4,
-      padding: '14px 20px',
-      display: 'flex', alignItems: 'center', gap: 12,
-      marginBottom: 24,
-    }}>
+    <a
+      href="https://us-south.watson-orchestrate.cloud.ibm.com"
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        background: C.blueDim,
+        border: `1px solid rgba(15,98,254,0.2)`,
+        borderRadius: 4,
+        padding: '14px 20px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        marginBottom: 24,
+        textDecoration: 'none',
+        cursor: 'pointer',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(15,98,254,0.14)'; e.currentTarget.style.borderColor = 'rgba(15,98,254,0.4)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = C.blueDim; e.currentTarget.style.borderColor = 'rgba(15,98,254,0.2)' }}
+    >
       <div style={{
         width: 32, height: 32, borderRadius: 4,
         background: 'rgba(15,98,254,0.12)',
@@ -229,12 +258,13 @@ function OrchestrateBanner() {
           <path d="M8 4.5a1 1 0 00-1 1v3a1 1 0 001 1h2.5a1 1 0 000-2H9V5.5a1 1 0 00-1-1z" fill={C.blue}/>
         </svg>
       </div>
-      <div>
+      <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, color: C.txt1, fontWeight: 500 }}>
           Conversational interface powered by IBM watsonx Orchestrate — available via dedicated agent portal
         </div>
       </div>
-    </div>
+      <div style={{ fontSize: 18, color: C.blue, flexShrink: 0 }}>↗</div>
+    </a>
   )
 }
 
@@ -302,7 +332,7 @@ function RiskRing({ score }) {
 
 function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, currentMonth }) {
   const [hov, setHov] = useState(false)
-  const score = metrics ? computeRiskScore(metrics, currentMonth) : null
+  const score = metrics ? computeRiskScore(metrics, currentMonth, benchmarks) : null
   const m = metrics?.find(r => r.month === currentMonth)
   const worst = m && benchmarks ? getWorstMetric(m, benchmarks) : null
 
@@ -417,16 +447,18 @@ function SeasonalPanel({ risks, currentMonth }) {
 
 // ─── Summary Banner ──────────────────────────────────────────────────────────
 
-function SummaryBanner({ departments, departmentMetrics, seasonalRisks, currentMonth }) {
+function SummaryBanner({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, currentMonth }) {
   const elevatedCount = departments.filter(dept => {
     const metrics = departmentMetrics[dept.department_id]
-    return metrics && computeRiskScore(metrics, currentMonth) >= 6
+    const benchmarks = departmentBenchmarks[dept.department_id]
+    return metrics && computeRiskScore(metrics, currentMonth, benchmarks) >= 6
   }).length
 
   const totalCEHours = departments.reduce((sum, dept) => {
     const metrics = departmentMetrics[dept.department_id]
+    const benchmarks = departmentBenchmarks[dept.department_id]
     if (!metrics) return sum
-    const score = computeRiskScore(metrics, currentMonth)
+    const score = computeRiskScore(metrics, currentMonth, benchmarks)
     return sum + (score >= 7 ? 8 : score >= 4 ? 4 : 2)
   }, 0)
 
@@ -463,7 +495,7 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: C.txt1 }}>Director Dashboard</h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: C.txt3 }}>
-          Unit-level risk intelligence for {MONTH_FULL[currentMonth]} 2025
+          Unit-level risk intelligence for {MONTH_FULL[currentMonth]} 2026
           &nbsp;·&nbsp; {departments.length} departments monitored
         </p>
       </div>
@@ -478,6 +510,7 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
       <SummaryBanner
         departments={departments}
         departmentMetrics={departmentMetrics}
+        departmentBenchmarks={departmentBenchmarks}
         seasonalRisks={seasonalRisks}
         currentMonth={currentMonth}
       />
@@ -835,7 +868,7 @@ function MetricsTrend({ metrics, currentMonth }) {
 
 // ─── Department Detail ────────────────────────────────────────────────────────
 
-function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, currentMonth }) {
+function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, onRefresh, currentMonth }) {
   return (
     <div style={{ padding: '32px 28px', maxWidth: 960, margin: '0 auto' }}>
       <button
@@ -854,8 +887,25 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
       </button>
 
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>
-          AI Analysis · {MONTH_FULL[currentMonth]} 2025
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+          <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            AI Analysis · {MONTH_FULL[currentMonth]} 2026
+          </div>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              style={{
+                background: 'none', border: `1px solid ${C.border}`,
+                borderRadius: 4, padding: '4px 12px',
+                fontSize: 11, color: C.txt3, cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.color = C.blue; e.currentTarget.style.borderColor = C.blue }}
+              onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.border }}
+            >
+              ↻ Refresh Analysis
+            </button>
+          )}
         </div>
         <h1 style={{ margin: '0 0 16px', fontSize: 28, fontWeight: 700, color: C.txt1 }}>
           {analysis.department_name}
@@ -885,6 +935,89 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, cu
           .sort((a, b) => b.urgency_score - a.urgency_score)
           .map((rec, i) => <CECard key={i} rec={rec} />)
         }
+      </div>
+    </div>
+  )
+}
+
+// ─── Analysis Loading Steps ──────────────────────────────────────────────────
+
+const ANALYSIS_STEPS = [
+  { label: 'Retrieving EMR data', delay: 0 },
+  { label: 'Analyzing staffing patterns', delay: 3000 },
+  { label: 'Identifying handoff quality trends', delay: 7000 },
+  { label: 'Cross-referencing readmission data', delay: 12000 },
+  { label: 'Applying seasonal risk overlay', delay: 18000 },
+  { label: 'Generating CE recommendations via watsonx.ai', delay: 25000 },
+]
+
+function AnalysisLoadingView({ departmentName }) {
+  const [activeStep, setActiveStep] = useState(0)
+
+  useEffect(() => {
+    const timers = ANALYSIS_STEPS.map((step, i) => {
+      if (i === 0) return null
+      return setTimeout(() => setActiveStep(i), step.delay)
+    })
+    return () => timers.forEach(t => t && clearTimeout(t))
+  }, [])
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      height: 'calc(100vh - 60px)', gap: 32, padding: 28,
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+          Generating Analysis
+        </div>
+        <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.txt1 }}>{departmentName}</h2>
+      </div>
+
+      <div style={{
+        background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+        padding: '28px 36px', width: '100%', maxWidth: 480,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+      }}>
+        {ANALYSIS_STEPS.map((step, i) => {
+          const done = i < activeStep
+          const current = i === activeStep
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '10px 0',
+              opacity: i <= activeStep ? 1 : 0.3,
+              transition: 'opacity 0.4s ease',
+            }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? `${C.green}15` : current ? C.blueDim : 'transparent',
+                border: `2px solid ${done ? C.green : current ? C.blue : C.border}`,
+                transition: 'all 0.3s',
+              }}>
+                {done ? (
+                  <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>✓</span>
+                ) : current ? (
+                  <Spinner size={10} color={C.blue} />
+                ) : (
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.border }} />
+                )}
+              </div>
+              <span style={{
+                fontSize: 13, color: done ? C.green : current ? C.txt1 : C.txt4,
+                fontWeight: current ? 600 : 400,
+                transition: 'all 0.3s',
+              }}>
+                {step.label}{current ? '…' : ''}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ fontSize: 12, color: C.txt4, textAlign: 'center' }}>
+        IBM watsonx.ai · Llama 3.3 70B Instruct
       </div>
     </div>
   )
@@ -933,6 +1066,8 @@ export default function App() {
   const [seasonalRisks, setSeasonalRisks] = useState([])
   const [selected, setSelected]       = useState(null)
   const [analyzingId, setAnalyzingId] = useState(null)
+  const [analyzingName, setAnalyzingName] = useState('')
+  const [analysisCache, setAnalysisCache] = useState({})
   const [loading, setLoading]         = useState(true)
   const [error, setError]             = useState(null)
   const [currentMonth, setCurrentMonth] = useState(3)
@@ -993,8 +1128,25 @@ export default function App() {
       .catch(() => {})
   }, [currentMonth, loading])
 
-  async function handleAnalyze(deptId) {
+  async function handleAnalyze(deptId, forceRefresh = false) {
+    const cacheKey = `${deptId}_${currentMonth}`
+
+    // Use cache if available and not forcing refresh
+    if (!forceRefresh && analysisCache[cacheKey]) {
+      setSelected({
+        analysis: analysisCache[cacheKey],
+        metrics: deptMetrics[deptId] ?? [],
+        soapNotes: deptSoapNotes[deptId] ?? [],
+        benchmarks: deptBenchmarks[deptId] ?? {},
+      })
+      setView('detail')
+      return
+    }
+
+    const dept = departments.find(d => d.department_id === deptId)
     setAnalyzingId(deptId)
+    setAnalyzingName(dept?.department_name ?? deptId)
+    setView('analyzing')
     try {
       const res = await fetch(`${API}/analyze`, {
         method: 'POST',
@@ -1006,6 +1158,7 @@ export default function App() {
         throw new Error(body.detail ?? `HTTP ${res.status}`)
       }
       const analysis = await res.json()
+      setAnalysisCache(prev => ({ ...prev, [cacheKey]: analysis }))
       setSelected({
         analysis,
         metrics: deptMetrics[deptId] ?? [],
@@ -1015,6 +1168,7 @@ export default function App() {
       setView('detail')
     } catch (err) {
       alert(`Analysis failed: ${err.message}`)
+      setView('dashboard')
     } finally {
       setAnalyzingId(null)
     }
@@ -1033,6 +1187,8 @@ export default function App() {
         <LoadingScreen />
       ) : error ? (
         <ErrorScreen message={error} />
+      ) : view === 'analyzing' ? (
+        <AnalysisLoadingView departmentName={analyzingName} />
       ) : view === 'detail' && selected ? (
         <DepartmentDetail
           analysis={selected.analysis}
@@ -1040,6 +1196,7 @@ export default function App() {
           soapNotes={selected.soapNotes}
           benchmarks={selected.benchmarks}
           onBack={() => setView('dashboard')}
+          onRefresh={() => handleAnalyze(selected.analysis.department_id, true)}
           currentMonth={currentMonth}
         />
       ) : (
