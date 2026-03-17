@@ -1,10 +1,14 @@
-from datetime import datetime, timezone
+import os
+import uuid
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
+import jwt
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from data import DEPARTMENTS, EMR_DATA, get_all_months_for_department, get_department_metrics
-from models import AnalysisRequest, AnalysisResponse, CERecommendation, DepartmentMetrics
+from data import DEPARTMENTS, EMR_DATA, BENCHMARKS, SOAP_NOTES, BEST_PRACTICE_REFERENCES, get_all_months_for_department, get_department_metrics
+from models import AnalysisRequest, AnalysisResponse, CERecommendation, DepartmentMetrics, SOAPNote, Benchmark
 from seasonal import get_seasonal_risks_for_month
 from watson import analyze_department
 
@@ -21,6 +25,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Load RSA private key for JWT signing (Orchestrate chat auth)
+_KEY_PATH = Path(__file__).parent / "chat_jwt_private.pem"
+_JWT_PRIVATE_KEY = _KEY_PATH.read_text() if _KEY_PATH.exists() else None
+
+
+@app.get("/chat-token", tags=["chat"])
+def chat_token():
+    """Generate a signed JWT for IBM Orchestrate web chat authentication."""
+    if not _JWT_PRIVATE_KEY:
+        raise HTTPException(status_code=500, detail="Chat JWT private key not configured.")
+    payload = {
+        "sub": f"clearpath-user-{uuid.uuid4().hex[:8]}",
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+        "context": {
+            "app": "ClearPath",
+            "role": "nursing_director",
+        },
+    }
+    token = jwt.encode(payload, _JWT_PRIVATE_KEY, algorithm="RS256")
+    return {"token": token}
 
 
 @app.get("/", tags=["health"])
@@ -62,6 +89,44 @@ def seasonal_risks(month: int):
     return {"month": month, "seasonal_risks": risks}
 
 
+@app.get("/departments/{department_id}/soap-notes", tags=["departments"])
+def get_soap_notes(department_id: str):
+    """Return sample SOAP notes / clinical documentation for a department."""
+    if department_id not in DEPARTMENTS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Department '{department_id}' not found. Valid IDs: {list(DEPARTMENTS.keys())}",
+        )
+    notes = SOAP_NOTES.get(department_id, [])
+    return {
+        "department_id": department_id,
+        "department_name": DEPARTMENTS[department_id],
+        "soap_notes": [SOAPNote(**n) for n in notes],
+    }
+
+
+@app.get("/departments/{department_id}/benchmarks", tags=["departments"])
+def get_benchmarks(department_id: str):
+    """Return objective benchmark targets for a department's metrics."""
+    if department_id not in DEPARTMENTS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Department '{department_id}' not found. Valid IDs: {list(DEPARTMENTS.keys())}",
+        )
+    benchmarks = BENCHMARKS.get(department_id, {})
+    return {
+        "department_id": department_id,
+        "department_name": DEPARTMENTS[department_id],
+        "benchmarks": {k: Benchmark(**v) for k, v in benchmarks.items()},
+    }
+
+
+@app.get("/references", tags=["references"])
+def get_references():
+    """Return best practice reference standards used in analysis."""
+    return {"references": BEST_PRACTICE_REFERENCES}
+
+
 @app.post("/analyze", response_model=AnalysisResponse, tags=["analysis"])
 def analyze(request: AnalysisRequest):
     """
@@ -80,6 +145,8 @@ def analyze(request: AnalysisRequest):
     department_data = get_all_months_for_department(department_id)
     seasonal_data = get_seasonal_risks_for_month(current_month)
     department_name = DEPARTMENTS[department_id]
+    soap_notes = SOAP_NOTES.get(department_id, [])
+    benchmarks = BENCHMARKS.get(department_id, {})
 
     try:
         result = analyze_department(
@@ -87,6 +154,9 @@ def analyze(request: AnalysisRequest):
             seasonal_data=seasonal_data,
             department_name=department_name,
             current_month=current_month,
+            soap_notes=soap_notes,
+            benchmarks=benchmarks,
+            references=BEST_PRACTICE_REFERENCES,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc))

@@ -72,6 +72,9 @@ def _build_prompt(
     department_data: list[dict],
     seasonal_data: list[dict],
     current_month: int,
+    soap_notes: list[dict] | None = None,
+    benchmarks: dict | None = None,
+    references: list[dict] | None = None,
 ) -> str:
     month_name = MONTH_NAMES[current_month]
 
@@ -110,6 +113,33 @@ def _build_prompt(
     else:
         seasonal_text = "  No major seasonal risk patterns active this month."
 
+    # Build SOAP notes context
+    soap_text = ""
+    if soap_notes:
+        soap_entries = []
+        for note in soap_notes:
+            soap_entries.append(
+                f"  [{note['note_type']}] {note['date']} — {note['provider']}\n"
+                f"    S: {note['subjective'][:200]}\n"
+                f"    O: {note['objective'][:200]}\n"
+                f"    A: {note['assessment'][:200]}\n"
+                f"    P: {note['plan'][:200]}"
+            )
+        soap_text = "\n\n".join(soap_entries)
+
+    # Build benchmarks context
+    benchmark_text = ""
+    if benchmarks:
+        benchmark_lines = []
+        for metric_key, bench in benchmarks.items():
+            benchmark_lines.append(f"  - {bench['label']}: target {bench['target']} (source: {bench['source']})")
+        benchmark_text = "\n".join(benchmark_lines)
+
+    # Build references context
+    reference_text = ""
+    if references:
+        reference_text = ", ".join(f"{r['name']} ({r['source']})" for r in references[:8])
+
     return f"""You are a clinical education analytics AI for a hospital nursing education director.
 Your task is to analyze EMR quality metrics for the {department_name} department and generate
 prioritized continuing education (CE) recommendations for nursing staff.
@@ -127,7 +157,20 @@ prioritized continuing education (CE) recommendations for nursing staff.
 ## Active Seasonal Risk Patterns for {month_name}
 {seasonal_text}
 
+## Objective Benchmark Targets
+{benchmark_text if benchmark_text else "  No benchmarks available."}
+
+## Clinical Documentation Samples (SOAP Notes)
+{soap_text if soap_text else "  No clinical documentation available."}
+
+## Applicable Best Practice Standards
+{reference_text if reference_text else "  No references available."}
+
 ## Analysis Instructions
+Identify quality/safety signals in the clinical narratives above. Reference applicable standards
+from AHRQ, NQF, CMS, ANA, Leapfrog, or Joint Commission in your reasoning where relevant.
+Compare current metrics against the benchmark targets above and flag any that exceed thresholds.
+
 Reason across EXACTLY these three signal types and identify anomalies or risks in each:
 
 1. STAFFING ANOMALIES — Evaluate nurse-to-patient ratio. Ratios above 1:5 for Med-Surg,
@@ -172,6 +215,9 @@ def analyze_department(
     seasonal_data: list[dict],
     department_name: str,
     current_month: int,
+    soap_notes: list[dict] | None = None,
+    benchmarks: dict | None = None,
+    references: list[dict] | None = None,
 ) -> dict:
     """
     Call watsonx.ai to analyze department metrics and return structured CE recommendations.
@@ -211,7 +257,7 @@ def analyze_department(
             },
         )
 
-        prompt = _build_prompt(department_name, department_data, seasonal_data, current_month)
+        prompt = _build_prompt(department_name, department_data, seasonal_data, current_month, soap_notes, benchmarks, references)
         response = model.generate_text(prompt=prompt)
 
     except Exception as exc:

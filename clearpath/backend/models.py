@@ -32,6 +32,24 @@ class CERecommendation(BaseModel):
     reasoning: str = Field(..., description="Data-backed rationale for this recommendation")
 
 
+class SOAPNote(BaseModel):
+    note_id: str
+    date: str
+    patient_id: str
+    provider: str
+    note_type: str
+    subjective: str
+    objective: str
+    assessment: str
+    plan: str
+
+
+class Benchmark(BaseModel):
+    target: float
+    source: str
+    label: str
+
+
 class AnalysisRequest(BaseModel):
     department_id: str
     current_month: int = Field(..., ge=1, le=12, description="Month number 1-12")
