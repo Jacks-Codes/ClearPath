@@ -1,0 +1,30 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page backdrop — synced with React `data-theme` on <html> (default lite) */
+html[data-theme="lite"] body {
+  background:
+    radial-gradient(1200px 800px at 12% -10%, rgba(255, 180, 140, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 88% 0%, rgba(120, 160, 255, 0.14), transparent 50%),
+    linear-gradient(145deg, #e8ecf4 0%, #dce3f0 42%, #eef1f8 100%);
+}
+
+html[data-theme="dark"] body {
+  background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0d0d14 100%);
+}
+
+::-webkit-scrollbar { width: 6px; }
+html[data-theme="lite"] ::-webkit-scrollbar-track { background: rgba(0,0,0,0.04); }
+html[data-theme="lite"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 3px; }
+html[data-theme="lite"] ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
+
+html[data-theme="dark"] ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+html[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }

@@ -1,4 +1,6 @@
-import { useState, useEffect, Fragment } from 'react'
+import {
+  useState, useEffect, Fragment, createContext, useContext, useMemo, useCallback,
+} from 'react'
 import {
   ComposedChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -18,44 +20,107 @@ const KNOWN_STANDARDS = [
   'Safe Practice', 'Morse', 'NEWS2', 'MEWS', 'SOFA', 'GINA',
 ]
 
-// Palette — dark mode with Anthropic orange accent
-const C = {
-  accent:     '#E87040',
-  accentLt:   '#F09070',
-  accentDim:  'rgba(232,112,64,0.10)',
-  accentGlow: 'rgba(232,112,64,0.25)',
-  red:        '#ef4444',
-  orange:     '#f97316',
-  yellow:     '#eab308',
-  green:      '#22c55e',
-  blue:       '#3b82f6',
-  // Glass surfaces
-  glassBg:    'rgba(255,255,255,0.04)',
-  glassCard:  'rgba(255,255,255,0.06)',
-  glassHov:   'rgba(255,255,255,0.10)',
-  glassBorder:'rgba(255,255,255,0.10)',
-  glassHigh:  'rgba(255,255,255,0.15)',
-  // Text
-  txt1:       'rgba(255,255,255,0.92)',
-  txt2:       'rgba(255,255,255,0.65)',
-  txt3:       'rgba(255,255,255,0.40)',
-  txt4:       'rgba(255,255,255,0.22)',
+const ThemeContext = createContext(null)
+
+function useTheme() {
+  const ctx = useContext(ThemeContext)
+  if (!ctx) throw new Error('useTheme must be used within ThemeContext.Provider')
+  return ctx
 }
 
-// Glass card style helper
-const glass = (extra = {}) => ({
-  background: C.glassCard,
-  backdropFilter: 'blur(20px) saturate(1.4)',
-  WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-  border: `1px solid ${C.glassBorder}`,
-  borderRadius: 16,
-  boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
-  ...extra,
-})
+function getPalette(theme) {
+  const lite = theme === 'lite'
+  if (lite) {
+    return {
+      accent: '#C94F1A',
+      accentLt: '#E05820',
+      accentDim: 'rgba(200,75,30,0.10)',
+      accentGlow: 'rgba(200,75,30,0.28)',
+      red: '#dc2626',
+      orange: '#ea580c',
+      yellow: '#ca8a04',
+      green: '#15803d',
+      blue: '#2563eb',
+      glassBg: 'rgba(255,255,255,0.12)',
+      glassCard: 'rgba(255,255,255,0.18)',
+      glassHov: 'rgba(255,255,255,0.40)',
+      glassBorder: 'rgba(255,255,255,0.72)',
+      glassHigh: 'rgba(255,255,255,0.95)',
+      txt1: 'rgba(12,14,22,0.94)',
+      txt2: 'rgba(22,28,42,0.74)',
+      txt3: 'rgba(38,45,65,0.48)',
+      txt4: 'rgba(38,45,65,0.28)',
+      headerBg: 'rgba(255,255,255,0.34)',
+      barTrack: 'rgba(0,0,0,0.06)',
+      ringTrack: 'rgba(0,0,0,0.08)',
+      soapNestedBg: 'rgba(255,255,255,0.32)',
+      chartGrid: 'rgba(0,0,0,0.08)',
+    }
+  }
+  return {
+    accent: '#E87040',
+    accentLt: '#F09070',
+    accentDim: 'rgba(232,112,64,0.10)',
+    accentGlow: 'rgba(232,112,64,0.25)',
+    red: '#ef4444',
+    orange: '#f97316',
+    yellow: '#eab308',
+    green: '#22c55e',
+    blue: '#3b82f6',
+    glassBg: 'rgba(255,255,255,0.02)',
+    glassCard: 'rgba(255,255,255,0.04)',
+    glassHov: 'rgba(255,255,255,0.10)',
+    glassBorder: 'rgba(255,255,255,0.22)',
+    glassHigh: 'rgba(255,255,255,0.32)',
+    txt1: 'rgba(255,255,255,0.92)',
+    txt2: 'rgba(255,255,255,0.65)',
+    txt3: 'rgba(255,255,255,0.40)',
+    txt4: 'rgba(255,255,255,0.22)',
+    headerBg: 'rgba(10,10,15,0.52)',
+    barTrack: 'rgba(255,255,255,0.07)',
+    ringTrack: 'rgba(255,255,255,0.08)',
+    soapNestedBg: 'rgba(255,255,255,0.03)',
+    chartGrid: 'rgba(255,255,255,0.08)',
+  }
+}
+
+/** Stronger liquid glass: specular top edge, more transparent body, heavy blur */
+function makeGlass(C, theme, extra = {}) {
+  const lite = theme === 'lite'
+  const bf = lite
+    ? 'blur(40px) saturate(1.75)'
+    : 'blur(36px) saturate(2) brightness(1.14)'
+  const bg = lite
+    ? 'linear-gradient(168deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.38) 38%, rgba(255,255,255,0.14) 72%, rgba(255,255,255,0.06) 100%)'
+    : 'linear-gradient(165deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 42%, rgba(255,255,255,0.02) 68%, rgba(255,255,255,0.008) 100%)'
+  const border = lite
+    ? '1px solid rgba(255,255,255,0.88)'
+    : '1px solid rgba(255,255,255,0.26)'
+  const shadow = lite
+    ? '0 14px 56px rgba(20,35,70,0.11), inset 0 1px 0 rgba(255,255,255,1), inset 0 -1px 0 rgba(100,120,160,0.10), inset 0 0 72px rgba(255,255,255,0.18)'
+    : '0 14px 56px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.42), inset 0 -1px 0 rgba(0,0,0,0.4), inset 0 0 100px rgba(255,255,255,0.04)'
+  return {
+    background: bg,
+    backdropFilter: bf,
+    WebkitBackdropFilter: bf,
+    border: border,
+    borderRadius: 16,
+    boxShadow: shadow,
+    ...extra,
+  }
+}
+
+function getChartSeries(C) {
+  return [
+    { key: 'readmission_rate_30d', label: '30d Readmit %', color: C.red, axis: 'L' },
+    { key: 'medication_error_rate', label: 'Med Error /1k', color: C.orange, axis: 'L' },
+    { key: 'handoff_documentation_score', label: 'Handoff Score', color: C.accent, axis: 'R' },
+  ]
+}
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
-function urgencyColor(s) {
+function urgencyColor(s, C) {
   if (s >= 9) return C.red
   if (s >= 7) return C.orange
   if (s >= 4) return C.yellow
@@ -67,7 +132,7 @@ function urgencyLabel(s) {
   if (s >= 4) return 'MODERATE'
   return 'LOW'
 }
-function riskLevelColor(lvl) {
+function riskLevelColor(lvl, C) {
   return { critical: C.red, high: C.orange, moderate: C.yellow, low: C.green }[lvl] ?? C.txt3
 }
 
@@ -155,12 +220,14 @@ function key_format(key, val) {
 
 // ─── Small shared atoms ───────────────────────────────────────────────────────
 
-function Spinner({ size = 24, color = C.accent }) {
+function Spinner({ size = 24, color }) {
+  const { C } = useTheme()
+  const stroke = color ?? C.accent
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
-      border: `2px solid ${color}30`,
-      borderTopColor: color,
+      border: `2px solid ${stroke}30`,
+      borderTopColor: stroke,
       borderRadius: '50%',
       animation: 'spin 0.7s linear infinite',
       display: 'inline-block',
@@ -182,6 +249,7 @@ function Badge({ label, color, bg }) {
 }
 
 function SectionLabel({ children }) {
+  const { C } = useTheme()
   return (
     <div style={{
       fontSize: 11, fontWeight: 700, color: C.txt3,
@@ -195,15 +263,16 @@ function SectionLabel({ children }) {
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 function Header({ onDashboard }) {
+  const { C, theme, setTheme } = useTheme()
   return (
     <header style={{
       height: 64,
       borderBottom: `1px solid ${C.glassBorder}`,
       padding: '0 28px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'rgba(10,10,15,0.7)',
-      backdropFilter: 'blur(24px) saturate(1.5)',
-      WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
+      background: C.headerBg,
+      backdropFilter: 'blur(32px) saturate(1.85)',
+      WebkitBackdropFilter: 'blur(32px) saturate(1.85)',
       position: 'sticky', top: 0, zIndex: 100,
     }}>
       <div
@@ -224,18 +293,37 @@ function Header({ onDashboard }) {
         </div>
       </div>
 
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        background: C.accentDim,
-        border: `1px solid ${C.accentGlow}`,
-        borderRadius: 10, padding: '7px 14px',
-        fontSize: 12, color: C.accent, fontWeight: 600,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          type="button"
+          onClick={() => setTheme(t => (t === 'lite' ? 'dark' : 'lite'))}
+          style={{
+            background: theme === 'lite' ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${C.glassBorder}`,
+            borderRadius: 10,
+            padding: '7px 14px',
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.txt2,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          {theme === 'lite' ? 'Dark' : 'Lite'} mode
+        </button>
         <div style={{
-          width: 7, height: 7, borderRadius: '50%', background: C.accent,
-          boxShadow: `0 0 8px ${C.accent}`,
-        }} />
-        Powered by Claude
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: C.accentDim,
+          border: `1px solid ${C.accentGlow}`,
+          borderRadius: 10, padding: '7px 14px',
+          fontSize: 12, color: C.accent, fontWeight: 600,
+        }}>
+          <div style={{
+            width: 7, height: 7, borderRadius: '50%', background: C.accent,
+            boxShadow: `0 0 8px ${C.accent}`,
+          }} />
+          Powered by Claude
+        </div>
       </div>
     </header>
   )
@@ -244,6 +332,7 @@ function Header({ onDashboard }) {
 // ─── Month Selector ──────────────────────────────────────────────────────────
 
 function MonthSelector({ currentMonth, onChange }) {
+  const { C } = useTheme()
   return (
     <div style={{
       display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 24,
@@ -277,13 +366,14 @@ function MonthSelector({ currentMonth, onChange }) {
 // ─── Risk Ring (SVG donut) ────────────────────────────────────────────────────
 
 function RiskRing({ score }) {
-  const color = urgencyColor(score)
+  const { C } = useTheme()
+  const color = urgencyColor(score, C)
   const r = 22
   const circ = 2 * Math.PI * r
   return (
     <div style={{ position: 'relative', width: 58, height: 58, flexShrink: 0 }}>
       <svg width="58" height="58" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
+        <circle cx="29" cy="29" r={r} fill="none" stroke={C.ringTrack} strokeWidth="4" />
         <circle cx="29" cy="29" r={r} fill="none" stroke={color} strokeWidth="4"
           strokeDasharray={`${(score / 10) * circ} ${circ}`}
           strokeLinecap="round"
@@ -304,18 +394,20 @@ function RiskRing({ score }) {
 // ─── Department Card ─────────────────────────────────────────────────────────
 
 function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, currentMonth }) {
+  const { C, glass, theme } = useTheme()
   const [hov, setHov] = useState(false)
   const score = metrics ? computeRiskScore(metrics, currentMonth, benchmarks) : null
   const m = metrics?.find(r => r.month === currentMonth)
+  const hoverGlass = theme === 'lite'
+    ? 'linear-gradient(168deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.52) 40%, rgba(255,255,255,0.24) 100%)'
+    : 'linear-gradient(165deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.05) 100%)'
 
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        ...glass(),
-        background: hov ? C.glassHov : C.glassCard,
-        border: `1px solid ${hov ? C.glassHigh : C.glassBorder}`,
+        ...glass(hov ? { background: hoverGlass, border: `1px solid ${C.glassHigh}` } : {}),
         padding: 22,
         transition: 'all 0.25s ease',
         display: 'flex', flexDirection: 'column', gap: 16,
@@ -328,7 +420,7 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         </div>
         {score !== null
           ? <RiskRing score={score} />
-          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', opacity: 0.6 }}
+          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: C.ringTrack, opacity: 0.6 }}
               className="pulse" />
         }
       </div>
@@ -393,6 +485,7 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
 // ─── Seasonal Panel ──────────────────────────────────────────────────────────
 
 function SeasonalPanel({ risks, currentMonth }) {
+  const { C, glass } = useTheme()
   return (
     <div style={{ marginTop: 8 }}>
       <SectionLabel>Seasonal Forecast — {MONTH_FULL[currentMonth]}</SectionLabel>
@@ -408,12 +501,12 @@ function SeasonalPanel({ risks, currentMonth }) {
             {risks.map((risk, i) => (
               <div key={i} style={{
                 ...glass(),
-                borderLeft: `3px solid ${riskLevelColor(risk.risk_level)}`,
+                borderLeft: `3px solid ${riskLevelColor(risk.risk_level, C)}`,
                 padding: '16px 18px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: C.txt1 }}>{risk.name}</span>
-                  <Badge label={risk.risk_level} color={riskLevelColor(risk.risk_level)} />
+                  <Badge label={risk.risk_level} color={riskLevelColor(risk.risk_level, C)} />
                 </div>
                 <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.5 }}>
                   {risk.description.length > 120 ? risk.description.slice(0, 120) + '...' : risk.description}
@@ -430,6 +523,7 @@ function SeasonalPanel({ risks, currentMonth }) {
 // ─── Summary Banner ──────────────────────────────────────────────────────────
 
 function SummaryBanner({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, currentMonth }) {
+  const { C, glass } = useTheme()
   const elevatedCount = departments.filter(dept => {
     const metrics = departmentMetrics[dept.department_id]
     const benchmarks = departmentBenchmarks[dept.department_id]
@@ -470,6 +564,7 @@ function SummaryBanner({ departments, departmentMetrics, departmentBenchmarks, s
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, onAnalyze, analyzingId, currentMonth, onMonthChange }) {
+  const { C } = useTheme()
   return (
     <div style={{ padding: '32px 28px', maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 20 }}>
@@ -518,6 +613,7 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
 // ─── Causal Chain ─────────────────────────────────────────────────────────────
 
 function CausalChain({ chain }) {
+  const { C, glass } = useTheme()
   const steps = parseCausalChain(chain)
   if (!steps.length) return null
 
@@ -554,8 +650,9 @@ function CausalChain({ chain }) {
 // ─── CE Recommendation Card ───────────────────────────────────────────────────
 
 function CECard({ rec }) {
+  const { C, glass } = useTheme()
   const [open, setOpen] = useState(false)
-  const color = urgencyColor(rec.urgency_score)
+  const color = urgencyColor(rec.urgency_score, C)
   const refBadges = findReferenceBadges(rec.reasoning)
 
   const timing = {
@@ -572,10 +669,10 @@ function CECard({ rec }) {
         borderLeft: `3px solid ${color}`,
         padding: '18px 20px',
         marginBottom: 10, cursor: 'pointer',
-        transition: 'background 0.2s',
+        transition: 'filter 0.2s, box-shadow 0.2s',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = C.glassHov}
-      onMouseLeave={e => e.currentTarget.style.background = C.glassCard}
+      onMouseEnter={e => { e.currentTarget.style.filter = 'brightness(1.06)' }}
+      onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <div style={{
@@ -638,6 +735,7 @@ function CECard({ rec }) {
 // ─── Benchmark Comparison Bars ───────────────────────────────────────────────
 
 function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
+  const { C, glass } = useTheme()
   const m = metrics?.find(r => r.month === currentMonth)
   if (!m || !benchmarks || Object.keys(benchmarks).length === 0) return null
 
@@ -673,7 +771,7 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
               </div>
               <div style={{
                 position: 'relative', height: 8,
-                background: 'rgba(255,255,255,0.06)',
+                background: C.barTrack,
                 borderRadius: 4, overflow: 'visible',
               }}>
                 <div style={{
@@ -704,6 +802,7 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
 // ─── SOAP Notes Section ──────────────────────────────────────────────────────
 
 function SOAPNotesSection({ notes }) {
+  const { C, glass } = useTheme()
   const [expanded, setExpanded] = useState(false)
   if (!notes || notes.length === 0) return null
 
@@ -726,7 +825,7 @@ function SOAPNotesSection({ notes }) {
             <div key={note.note_id} style={{
               border: `1px solid ${C.glassBorder}`,
               borderRadius: 12, padding: 18,
-              background: 'rgba(255,255,255,0.02)',
+              background: C.soapNestedBg,
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
@@ -770,13 +869,9 @@ function SOAPNotesSection({ notes }) {
 
 // ─── Metrics Trend Chart ──────────────────────────────────────────────────────
 
-const CHART_SERIES = [
-  { key: 'readmission_rate_30d',       label: '30d Readmit %',   color: C.red,    axis: 'L' },
-  { key: 'medication_error_rate',       label: 'Med Error /1k',   color: C.orange, axis: 'L' },
-  { key: 'handoff_documentation_score', label: 'Handoff Score',   color: C.accent, axis: 'R' },
-]
-
 const CustomTooltip = ({ active, payload, label }) => {
+  const { C, glass } = useTheme()
+  const chartSeries = getChartSeries(C)
   if (!active || !payload?.length) return null
   return (
     <div style={{
@@ -787,7 +882,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div style={{ color: C.txt1, fontWeight: 600, marginBottom: 6 }}>{label}</div>
       {payload.map(p => (
         <div key={p.dataKey} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, color: p.color, marginBottom: 3 }}>
-          <span style={{ color: C.txt3 }}>{CHART_SERIES.find(s => s.key === p.dataKey)?.label}</span>
+          <span style={{ color: C.txt3 }}>{chartSeries.find(s => s.key === p.dataKey)?.label}</span>
           <span style={{ fontWeight: 600 }}>{p.value}</span>
         </div>
       ))}
@@ -796,7 +891,9 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 function MetricsTrend({ metrics, currentMonth }) {
+  const { C, glass } = useTheme()
   const data = getLast6Months(metrics, currentMonth)
+  const chartSeries = getChartSeries(C)
 
   return (
     <div style={{
@@ -806,7 +903,7 @@ function MetricsTrend({ metrics, currentMonth }) {
       <SectionLabel>6-Month EMR Trend</SectionLabel>
 
       <div style={{ display: 'flex', gap: 18, marginBottom: 16, flexWrap: 'wrap' }}>
-        {CHART_SERIES.map(s => (
+        {chartSeries.map(s => (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 14, height: 3, background: s.color, borderRadius: 2, boxShadow: `0 0 6px ${s.color}50` }} />
             <span style={{ fontSize: 11, color: C.txt3 }}>{s.label}</span>
@@ -816,7 +913,7 @@ function MetricsTrend({ metrics, currentMonth }) {
 
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+          <CartesianGrid strokeDasharray="3 3" stroke={C.chartGrid} />
           <XAxis dataKey="label" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="L" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 30]} width={32} />
           <YAxis yAxisId="R" orientation="right" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[50, 100]} width={36} />
@@ -837,6 +934,7 @@ function MetricsTrend({ metrics, currentMonth }) {
 // ─── Department Detail ────────────────────────────────────────────────────────
 
 function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, onRefresh, currentMonth }) {
+  const { C, glass } = useTheme()
   return (
     <div style={{ padding: '32px 28px', maxWidth: 960, margin: '0 auto' }}>
       <button
@@ -919,6 +1017,7 @@ const ANALYSIS_STEPS = [
 ]
 
 function AnalysisLoadingView({ departmentName }) {
+  const { C, glass } = useTheme()
   const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
@@ -992,6 +1091,7 @@ function AnalysisLoadingView({ departmentName }) {
 // ─── Loading / Error screens ──────────────────────────────────────────────────
 
 function LoadingScreen() {
+  const { C } = useTheme()
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -1004,6 +1104,7 @@ function LoadingScreen() {
 }
 
 function ErrorScreen({ message }) {
+  const { C, glass } = useTheme()
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1025,6 +1126,15 @@ function ErrorScreen({ message }) {
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [theme, setTheme]             = useState('lite')
+  const C = useMemo(() => getPalette(theme), [theme])
+  const glass = useCallback((extra) => makeGlass(C, theme, extra), [C, theme])
+  const themeCtx = useMemo(() => ({ theme, setTheme, C, glass }), [theme, setTheme, C, glass])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
   const [view, setView]               = useState('dashboard')
   const [departments, setDepartments] = useState([])
   const [deptMetrics, setDeptMetrics] = useState({})
@@ -1141,47 +1251,49 @@ export default function App() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'transparent',
-      color: C.txt1,
-      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-    }}>
-      <Header onDashboard={() => setView('dashboard')} />
+    <ThemeContext.Provider value={themeCtx}>
+      <div style={{
+        minHeight: '100vh',
+        background: 'transparent',
+        color: C.txt1,
+        fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}>
+        <Header onDashboard={() => setView('dashboard')} />
 
-      {loading ? (
-        <LoadingScreen />
-      ) : error ? (
-        <ErrorScreen message={error} />
-      ) : view === 'analyzing' ? (
-        <AnalysisLoadingView departmentName={analyzingName} />
-      ) : view === 'detail' && selected ? (
-        <DepartmentDetail
-          analysis={selected.analysis}
-          metrics={selected.metrics}
-          soapNotes={selected.soapNotes}
-          benchmarks={selected.benchmarks}
-          onBack={() => setView('dashboard')}
-          onRefresh={() => handleAnalyze(selected.analysis.department_id, true)}
-          currentMonth={currentMonth}
-        />
-      ) : (
-        <Dashboard
-          departments={departments}
-          departmentMetrics={deptMetrics}
-          departmentBenchmarks={deptBenchmarks}
-          seasonalRisks={seasonalRisks}
-          onAnalyze={handleAnalyze}
-          analyzingId={analyzingId}
-          currentMonth={currentMonth}
-          onMonthChange={setCurrentMonth}
-        />
-      )}
+        {loading ? (
+          <LoadingScreen />
+        ) : error ? (
+          <ErrorScreen message={error} />
+        ) : view === 'analyzing' ? (
+          <AnalysisLoadingView departmentName={analyzingName} />
+        ) : view === 'detail' && selected ? (
+          <DepartmentDetail
+            analysis={selected.analysis}
+            metrics={selected.metrics}
+            soapNotes={selected.soapNotes}
+            benchmarks={selected.benchmarks}
+            onBack={() => setView('dashboard')}
+            onRefresh={() => handleAnalyze(selected.analysis.department_id, true)}
+            currentMonth={currentMonth}
+          />
+        ) : (
+          <Dashboard
+            departments={departments}
+            departmentMetrics={deptMetrics}
+            departmentBenchmarks={deptBenchmarks}
+            seasonalRisks={seasonalRisks}
+            onAnalyze={handleAnalyze}
+            analyzingId={analyzingId}
+            currentMonth={currentMonth}
+            onMonthChange={setCurrentMonth}
+          />
+        )}
 
-      <style>{`
-        @keyframes spin  { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:.3 } 50% { opacity:.7 } }
-      `}</style>
-    </div>
+        <style>{`
+          @keyframes spin  { to { transform: rotate(360deg); } }
+          @keyframes pulse { 0%,100% { opacity:.3 } 50% { opacity:.7 } }
+        `}</style>
+      </div>
+    </ThemeContext.Provider>
   )
 }
