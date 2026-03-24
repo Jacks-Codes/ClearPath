@@ -34,7 +34,7 @@ _JWT_PRIVATE_KEY = _KEY_PATH.read_text() if _KEY_PATH.exists() else None
 
 @app.get("/chat-token", tags=["chat"])
 def chat_token():
-    """Generate a signed JWT for IBM Orchestrate web chat authentication."""
+    """Generate a signed JWT for chat authentication."""
     if not _JWT_PRIVATE_KEY:
         raise HTTPException(status_code=500, detail="Chat JWT private key not configured.")
     payload = {

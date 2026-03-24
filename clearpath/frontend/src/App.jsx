@@ -18,25 +18,40 @@ const KNOWN_STANDARDS = [
   'Safe Practice', 'Morse', 'NEWS2', 'MEWS', 'SOFA', 'GINA',
 ]
 
-// IBM Carbon palette — lite mode (mirrors ibm.com / White theme)
+// Palette — dark mode with Anthropic orange accent
 const C = {
-  blue:    '#0f62fe',
-  blueLt:  '#4589ff',
-  blueDim: 'rgba(15,98,254,0.08)',
-  red:     '#da1e28',
-  orange:  '#ff832b',
-  yellow:  '#f1c21b',
-  green:   '#24a148',
-  bg:      '#ffffff',
-  card:    '#f4f4f4',
-  cardHov: '#e8e8e8',
-  border:  '#e0e0e0',
-  borderB: 'rgba(15,98,254,0.5)',
-  txt1:    '#161616',
-  txt2:    '#525252',
-  txt3:    '#6f6f6f',
-  txt4:    '#8d8d8d',
+  accent:     '#E87040',
+  accentLt:   '#F09070',
+  accentDim:  'rgba(232,112,64,0.10)',
+  accentGlow: 'rgba(232,112,64,0.25)',
+  red:        '#ef4444',
+  orange:     '#f97316',
+  yellow:     '#eab308',
+  green:      '#22c55e',
+  blue:       '#3b82f6',
+  // Glass surfaces
+  glassBg:    'rgba(255,255,255,0.04)',
+  glassCard:  'rgba(255,255,255,0.06)',
+  glassHov:   'rgba(255,255,255,0.10)',
+  glassBorder:'rgba(255,255,255,0.10)',
+  glassHigh:  'rgba(255,255,255,0.15)',
+  // Text
+  txt1:       'rgba(255,255,255,0.92)',
+  txt2:       'rgba(255,255,255,0.65)',
+  txt3:       'rgba(255,255,255,0.40)',
+  txt4:       'rgba(255,255,255,0.22)',
 }
+
+// Glass card style helper
+const glass = (extra = {}) => ({
+  background: C.glassCard,
+  backdropFilter: 'blur(20px) saturate(1.4)',
+  WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
+  border: `1px solid ${C.glassBorder}`,
+  borderRadius: 16,
+  boxShadow: '0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+  ...extra,
+})
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
@@ -60,7 +75,6 @@ function computeRiskScore(metrics, month, benchmarks) {
   const m = metrics.find(r => r.month === month) ?? metrics.at(-1)
   if (!m) return 3
   if (!benchmarks || Object.keys(benchmarks).length === 0) {
-    // Fallback without benchmarks
     const n = [
       Math.min(m.patient_fall_rate / 4, 1),
       Math.min(m.medication_error_rate / 5, 1),
@@ -71,7 +85,6 @@ function computeRiskScore(metrics, month, benchmarks) {
     ]
     return Math.round((n.reduce((a, b) => a + b, 0) / n.length) * 10)
   }
-  // Benchmark-aware: measure gap from targets
   const gaps = []
   for (const [key, bench] of Object.entries(benchmarks)) {
     const val = m[key]
@@ -142,7 +155,7 @@ function key_format(key, val) {
 
 // ─── Small shared atoms ───────────────────────────────────────────────────────
 
-function Spinner({ size = 24, color = C.blue }) {
+function Spinner({ size = 24, color = C.accent }) {
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
@@ -160,8 +173,8 @@ function Badge({ label, color, bg }) {
     <span style={{
       fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
       color, background: bg ?? `${color}20`,
-      border: `1px solid ${color}40`,
-      borderRadius: 4, padding: '2px 7px',
+      border: `1px solid ${color}35`,
+      borderRadius: 8, padding: '3px 8px',
     }}>
       {label}
     </span>
@@ -172,7 +185,7 @@ function SectionLabel({ children }) {
   return (
     <div style={{
       fontSize: 11, fontWeight: 700, color: C.txt3,
-      textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14,
+      textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 14,
     }}>
       {children}
     </div>
@@ -184,12 +197,13 @@ function SectionLabel({ children }) {
 function Header({ onDashboard }) {
   return (
     <header style={{
-      height: 60,
-      borderBottom: `1px solid ${C.border}`,
+      height: 64,
+      borderBottom: `1px solid ${C.glassBorder}`,
       padding: '0 28px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: '#ffffff',
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      background: 'rgba(10,10,15,0.7)',
+      backdropFilter: 'blur(24px) saturate(1.5)',
+      WebkitBackdropFilter: 'blur(24px) saturate(1.5)',
       position: 'sticky', top: 0, zIndex: 100,
     }}>
       <div
@@ -198,75 +212,32 @@ function Header({ onDashboard }) {
       >
         <div style={{ width: 38, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <svg width="38" height="28" viewBox="0 0 56 48" fill="none">
-            <path d="M4 28 L10 28 L13 18 L16 36 L19 12 L22 38 L25 24" stroke={C.blue} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.35"/>
-            <circle cx="27" cy="24" r="3.5" fill={C.blue} opacity="0.6"/>
-            <path d="M29 24 L36 20 L44 14 L52 8" stroke={C.blue} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-            <circle cx="52" cy="8" r="3" fill={C.blue}/>
+            <path d="M4 28 L10 28 L13 18 L16 36 L19 12 L22 38 L25 24" stroke={C.accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.5"/>
+            <circle cx="27" cy="24" r="3.5" fill={C.accent} opacity="0.7"/>
+            <path d="M29 24 L36 20 L44 14 L52 8" stroke={C.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            <circle cx="52" cy="8" r="3" fill={C.accent}/>
           </svg>
         </div>
         <div>
           <div style={{ fontSize: 17, fontWeight: 700, color: C.txt1, letterSpacing: '-0.3px', lineHeight: 1 }}>ClearPath</div>
-          <div style={{ fontSize: 10, color: C.txt3, marginTop: 1 }}>Nursing CE Intelligence Platform</div>
+          <div style={{ fontSize: 10, color: C.txt3, marginTop: 2 }}>Nursing CE Intelligence Platform</div>
         </div>
       </div>
 
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 7,
-        background: C.blueDim,
-        border: `1px solid rgba(15,98,254,0.25)`,
-        borderRadius: 4, padding: '6px 12px',
-        fontSize: 12, color: C.blue, fontWeight: 500,
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: C.accentDim,
+        border: `1px solid ${C.accentGlow}`,
+        borderRadius: 10, padding: '7px 14px',
+        fontSize: 12, color: C.accent, fontWeight: 600,
       }}>
         <div style={{
-          width: 6, height: 6, borderRadius: '50%', background: C.blue,
+          width: 7, height: 7, borderRadius: '50%', background: C.accent,
+          boxShadow: `0 0 8px ${C.accent}`,
         }} />
-        Powered by IBM watsonx.ai
+        Powered by Claude
       </div>
     </header>
-  )
-}
-
-// ─── Orchestrate Banner ──────────────────────────────────────────────────────
-
-function OrchestrateBanner() {
-  return (
-    <a
-      href="https://us-south.watson-orchestrate.cloud.ibm.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{
-        background: C.blueDim,
-        border: `1px solid rgba(15,98,254,0.2)`,
-        borderRadius: 4,
-        padding: '14px 20px',
-        display: 'flex', alignItems: 'center', gap: 12,
-        marginBottom: 24,
-        textDecoration: 'none',
-        cursor: 'pointer',
-        transition: 'all 0.15s',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(15,98,254,0.14)'; e.currentTarget.style.borderColor = 'rgba(15,98,254,0.4)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = C.blueDim; e.currentTarget.style.borderColor = 'rgba(15,98,254,0.2)' }}
-    >
-      <div style={{
-        width: 32, height: 32, borderRadius: 4,
-        background: 'rgba(15,98,254,0.12)',
-        border: `1px solid rgba(15,98,254,0.25)`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 14, flexShrink: 0,
-      }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7zm0 12.5A5.506 5.506 0 012.5 8 5.506 5.506 0 018 2.5 5.506 5.506 0 0113.5 8 5.506 5.506 0 018 13.5z" fill={C.blue}/>
-          <path d="M8 4.5a1 1 0 00-1 1v3a1 1 0 001 1h2.5a1 1 0 000-2H9V5.5a1 1 0 00-1-1z" fill={C.blue}/>
-        </svg>
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13, color: C.txt1, fontWeight: 500 }}>
-          Conversational interface powered by IBM watsonx Orchestrate — available via dedicated agent portal
-        </div>
-      </div>
-      <div style={{ fontSize: 18, color: C.blue, flexShrink: 0 }}>↗</div>
-    </a>
   )
 }
 
@@ -275,7 +246,7 @@ function OrchestrateBanner() {
 function MonthSelector({ currentMonth, onChange }) {
   return (
     <div style={{
-      display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 24,
+      display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 24,
     }}>
       {MONTH_NAMES.slice(1).map((name, i) => {
         const mo = i + 1
@@ -285,14 +256,14 @@ function MonthSelector({ currentMonth, onChange }) {
             key={mo}
             onClick={() => onChange(mo)}
             style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              border: active ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
-              background: active ? C.blueDim : 'transparent',
-              color: active ? C.blue : C.txt3,
+              padding: '7px 16px',
+              borderRadius: 10,
+              border: active ? `1px solid ${C.accent}60` : `1px solid ${C.glassBorder}`,
+              background: active ? C.accentDim : 'transparent',
+              color: active ? C.accent : C.txt3,
               fontSize: 12, fontWeight: active ? 700 : 500,
               cursor: 'pointer',
-              transition: 'all 0.15s',
+              transition: 'all 0.2s',
             }}
           >
             {name}
@@ -312,11 +283,11 @@ function RiskRing({ score }) {
   return (
     <div style={{ position: 'relative', width: 58, height: 58, flexShrink: 0 }}>
       <svg width="58" height="58" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="4" />
+        <circle cx="29" cy="29" r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="4" />
         <circle cx="29" cy="29" r={r} fill="none" stroke={color} strokeWidth="4"
           strokeDasharray={`${(score / 10) * circ} ${circ}`}
           strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 0.6s ease' }}
+          style={{ transition: 'stroke-dasharray 0.6s ease', filter: `drop-shadow(0 0 6px ${color}60)` }}
         />
       </svg>
       <div style={{
@@ -336,19 +307,18 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
   const [hov, setHov] = useState(false)
   const score = metrics ? computeRiskScore(metrics, currentMonth, benchmarks) : null
   const m = metrics?.find(r => r.month === currentMonth)
-  const worst = m && benchmarks ? getWorstMetric(m, benchmarks) : null
 
   return (
     <div
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        background: hov ? C.cardHov : C.card,
-        border: `1px solid ${hov ? 'rgba(15,98,254,0.3)' : C.border}`,
-        borderRadius: 4, padding: 22,
-        transition: 'all 0.18s',
+        ...glass(),
+        background: hov ? C.glassHov : C.glassCard,
+        border: `1px solid ${hov ? C.glassHigh : C.glassBorder}`,
+        padding: 22,
+        transition: 'all 0.25s ease',
         display: 'flex', flexDirection: 'column', gap: 16,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -358,7 +328,7 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         </div>
         {score !== null
           ? <RiskRing score={score} />
-          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: '#e0e0e0', opacity: 0.6 }}
+          : <div style={{ width: 58, height: 58, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', opacity: 0.6 }}
               className="pulse" />
         }
       </div>
@@ -373,9 +343,9 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
             const color = passing ? C.green : C.red
             return (
               <div key={key} style={{
-                background: passing ? 'rgba(36,161,72,0.06)' : 'rgba(218,30,40,0.05)',
+                background: `${color}08`,
                 border: `1px solid ${color}20`,
-                borderRadius: 6, padding: '7px 12px',
+                borderRadius: 10, padding: '7px 12px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
                 <span style={{ fontSize: 11, color: C.txt2, fontWeight: 500 }}>{bench.label}</span>
@@ -398,21 +368,21 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
         onClick={() => onAnalyze(dept.department_id)}
         disabled={analyzing}
         style={{
-          width: '100%', padding: '10px 0',
-          background: analyzing ? C.blueDim : hov ? 'rgba(15,98,254,0.12)' : C.blueDim,
-          border: `1px solid rgba(15,98,254,0.35)`,
-          borderRadius: 8,
-          color: analyzing ? C.blueLt : C.blue,
+          width: '100%', padding: '11px 0',
+          background: analyzing ? C.accentDim : hov ? 'rgba(232,112,64,0.18)' : C.accentDim,
+          border: `1px solid ${C.accentGlow}`,
+          borderRadius: 10,
+          color: analyzing ? C.accentLt : C.accent,
           fontSize: 13, fontWeight: 600,
           cursor: analyzing ? 'not-allowed' : 'pointer',
-          transition: 'all 0.18s',
+          transition: 'all 0.2s',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         }}
       >
         {analyzing ? (
           <>
-            <Spinner size={13} color={C.blueLt} />
-            Generating report via watsonx.ai…
+            <Spinner size={13} color={C.accentLt} />
+            Generating report via Claude...
           </>
         ) : 'Generate CE Report'}
       </button>
@@ -437,18 +407,16 @@ function SeasonalPanel({ risks, currentMonth }) {
           }}>
             {risks.map((risk, i) => (
               <div key={i} style={{
-                background: C.card,
-                border: `1px solid ${C.border}`,
-                borderLeft: `4px solid ${riskLevelColor(risk.risk_level)}`,
-                borderRadius: 4, padding: '16px 18px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                ...glass(),
+                borderLeft: `3px solid ${riskLevelColor(risk.risk_level)}`,
+                padding: '16px 18px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: C.txt1 }}>{risk.name}</span>
                   <Badge label={risk.risk_level} color={riskLevelColor(risk.risk_level)} />
                 </div>
                 <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.5 }}>
-                  {risk.description.length > 120 ? risk.description.slice(0, 120) + '…' : risk.description}
+                  {risk.description.length > 120 ? risk.description.slice(0, 120) + '...' : risk.description}
                 </div>
               </div>
             ))}
@@ -482,17 +450,16 @@ function SummaryBanner({ departments, departmentMetrics, departmentBenchmarks, s
     }}>
         {[
         { value: elevatedCount, label: 'departments at elevated risk', color: elevatedCount > 0 ? C.orange : C.green },
-        { value: seasonalRisks.length, label: 'seasonal alerts active', color: seasonalRisks.length > 2 ? C.orange : C.blue },
-        { value: `${totalCEHours}+`, label: 'CE hours recommended', color: C.blue },
+        { value: seasonalRisks.length, label: 'seasonal alerts active', color: seasonalRisks.length > 2 ? C.orange : C.accent },
+        { value: `${totalCEHours}+`, label: 'CE hours recommended', color: C.accent },
       ].map(({ value, label, color }) => (
         <div key={label} style={{
-          background: color === C.blue ? C.blueDim : color === C.green ? 'rgba(36,161,72,0.08)' : color === C.orange ? 'rgba(255,131,43,0.08)' : C.blueDim,
-          border: `1px solid ${color}40`,
-          borderRadius: 4, padding: '14px 20px',
-          display: 'flex', alignItems: 'center', gap: 10,
+          ...glass(),
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 12,
           flex: '1 1 200px',
         }}>
-          <span style={{ fontSize: 22, fontWeight: 800, color }}>{value}</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color, textShadow: `0 0 20px ${color}40` }}>{value}</span>
           <span style={{ fontSize: 13, color: C.txt2 }}>{label}</span>
         </div>
       ))}
@@ -505,22 +472,16 @@ function SummaryBanner({ departments, departmentMetrics, departmentBenchmarks, s
 function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seasonalRisks, onAnalyze, analyzingId, currentMonth, onMonthChange }) {
   return (
     <div style={{ padding: '32px 28px', maxWidth: 1200, margin: '0 auto' }}>
-      {/* Page header */}
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: C.txt1 }}>Director Dashboard</h1>
         <p style={{ margin: '6px 0 0', fontSize: 14, color: C.txt3 }}>
           Unit-level risk intelligence for {MONTH_FULL[currentMonth]} 2026
-          &nbsp;·&nbsp; {departments.length} departments monitored
+          &nbsp;&middot;&nbsp; {departments.length} departments monitored
         </p>
       </div>
 
-      {/* Orchestrate banner */}
-      <OrchestrateBanner />
-
-      {/* Month selector */}
       <MonthSelector currentMonth={currentMonth} onChange={onMonthChange} />
 
-      {/* Summary stats */}
       <SummaryBanner
         departments={departments}
         departmentMetrics={departmentMetrics}
@@ -529,7 +490,6 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
         currentMonth={currentMonth}
       />
 
-      {/* Department cards grid */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -548,7 +508,6 @@ function Dashboard({ departments, departmentMetrics, departmentBenchmarks, seaso
         ))}
       </div>
 
-      {/* Seasonal forecast */}
       <div style={{ marginTop: 32 }}>
         <SeasonalPanel risks={seasonalRisks} currentMonth={currentMonth} />
       </div>
@@ -566,18 +525,17 @@ function CausalChain({ chain }) {
 
   return (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 4, padding: 22, marginBottom: 20,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      ...glass(),
+      padding: 22, marginBottom: 20,
     }}>
       <SectionLabel>Identified Causal Chain</SectionLabel>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         {steps.map((step, i) => (
           <Fragment key={i}>
             <div style={{
-              background: `${stepColors[i % stepColors.length]}15`,
-              border: `1px solid ${stepColors[i % stepColors.length]}40`,
-              borderRadius: 8, padding: '9px 18px',
+              background: `${stepColors[i % stepColors.length]}12`,
+              border: `1px solid ${stepColors[i % stepColors.length]}35`,
+              borderRadius: 10, padding: '9px 18px',
               fontSize: 13, fontWeight: 600,
               color: stepColors[i % stepColors.length],
             }}>
@@ -603,32 +561,31 @@ function CECard({ rec }) {
   const timing = {
     immediate:    { label: 'Immediate',    color: C.red },
     this_month:   { label: 'This Month',   color: C.orange },
-    next_quarter: { label: 'Next Quarter', color: C.blueLt },
+    next_quarter: { label: 'Next Quarter', color: C.accentLt },
   }[rec.timing] ?? { label: rec.timing, color: C.txt3 }
 
   return (
     <div
       onClick={() => setOpen(o => !o)}
       style={{
-        background: C.card,
-        border: `1px solid ${C.border}`,
-        borderLeft: `4px solid ${color}`,
-        borderRadius: 4, padding: '18px 20px',
+        ...glass(),
+        borderLeft: `3px solid ${color}`,
+        padding: '18px 20px',
         marginBottom: 10, cursor: 'pointer',
-        transition: 'background 0.15s',
+        transition: 'background 0.2s',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = C.cardHov}
-      onMouseLeave={e => e.currentTarget.style.background = C.card}
+      onMouseEnter={e => e.currentTarget.style.background = C.glassHov}
+      onMouseLeave={e => e.currentTarget.style.background = C.glassCard}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
         <div style={{
-          minWidth: 46, height: 46, borderRadius: 8,
-          background: `${color}15`, border: `1px solid ${color}35`,
+          minWidth: 46, height: 46, borderRadius: 12,
+          background: `${color}12`, border: `1px solid ${color}30`,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <span style={{ fontSize: 17, fontWeight: 800, color, lineHeight: 1 }}>{rec.urgency_score}</span>
-          <span style={{ fontSize: 8, color: `${color}90`, letterSpacing: 0.5 }}>/ 10</span>
+          <span style={{ fontSize: 8, color: `${color}80`, letterSpacing: 0.5 }}>/ 10</span>
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -642,30 +599,30 @@ function CECard({ rec }) {
         </div>
 
         <div style={{ color: C.txt4, fontSize: 11, flexShrink: 0, paddingTop: 2 }}>
-          {open ? '▲' : '▼'}
+          {open ? '\u25B2' : '\u25BC'}
         </div>
       </div>
 
       {open && (
         <div style={{
           marginTop: 16, paddingTop: 16,
-          borderTop: `1px solid ${C.border}`,
+          borderTop: `1px solid ${C.glassBorder}`,
         }}>
           <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.75 }}>
             {rec.reasoning}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(0,0,0,0.06)" />
+            <Badge label={`${rec.hours} CE hrs`} color={C.txt3} bg="rgba(255,255,255,0.06)" />
           </div>
           {refBadges.length > 0 && (
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
               {refBadges.map(ref => (
                 <span key={ref} style={{
                   fontSize: 10, fontWeight: 600,
-                  color: C.blueLt,
-                  background: C.blueDim,
-                  border: `1px solid rgba(15,98,254,0.25)`,
-                  borderRadius: 4, padding: '2px 8px',
+                  color: C.accentLt,
+                  background: C.accentDim,
+                  border: `1px solid ${C.accentGlow}`,
+                  borderRadius: 8, padding: '2px 8px',
                 }}>
                   {ref}
                 </span>
@@ -694,9 +651,8 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
 
   return (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 4, padding: 22, marginBottom: 20,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      ...glass(),
+      padding: 22, marginBottom: 20,
     }}>
       <SectionLabel>Benchmark Comparison</SectionLabel>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -717,7 +673,7 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
               </div>
               <div style={{
                 position: 'relative', height: 8,
-                background: 'rgba(0,0,0,0.06)',
+                background: 'rgba(255,255,255,0.06)',
                 borderRadius: 4, overflow: 'visible',
               }}>
                 <div style={{
@@ -727,6 +683,7 @@ function BenchmarkBars({ metrics, benchmarks, currentMonth }) {
                   borderRadius: 4,
                   transition: 'width 0.4s ease',
                   opacity: 0.7,
+                  boxShadow: `0 0 8px ${item.passing ? C.green : C.red}40`,
                 }} />
                 <div style={{
                   position: 'absolute',
@@ -752,25 +709,24 @@ function SOAPNotesSection({ notes }) {
 
   return (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 4, padding: 22, marginBottom: 20,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      ...glass(),
+      padding: 22, marginBottom: 20,
     }}>
       <div
         onClick={() => setExpanded(e => !e)}
         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
       >
-        <SectionLabel>Clinical Documentation Samples · {notes.length} notes</SectionLabel>
-        <span style={{ color: C.txt4, fontSize: 11 }}>{expanded ? '▲' : '▼'}</span>
+        <SectionLabel>Clinical Documentation Samples &middot; {notes.length} notes</SectionLabel>
+        <span style={{ color: C.txt4, fontSize: 11 }}>{expanded ? '\u25B2' : '\u25BC'}</span>
       </div>
 
       {expanded && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
           {notes.map(note => (
             <div key={note.note_id} style={{
-              border: `1px solid ${C.border}`,
-              borderRadius: 10, padding: 18,
-              background: 'rgba(0,0,0,0.02)',
+              border: `1px solid ${C.glassBorder}`,
+              borderRadius: 12, padding: 18,
+              background: 'rgba(255,255,255,0.02)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                 <div>
@@ -778,12 +734,12 @@ function SOAPNotesSection({ notes }) {
                   <span style={{ fontSize: 12, color: C.txt3, marginLeft: 10 }}>{note.note_id}</span>
                 </div>
                 <div style={{ fontSize: 12, color: C.txt3 }}>
-                  {note.date} · {note.provider}
+                  {note.date} &middot; {note.provider}
                 </div>
               </div>
 
               {[
-                { label: 'S', content: note.subjective, color: C.blue },
+                { label: 'S', content: note.subjective, color: C.accent },
                 { label: 'O', content: note.objective, color: C.orange },
                 { label: 'A', content: note.assessment, color: C.yellow },
                 { label: 'P', content: note.plan, color: C.green },
@@ -792,9 +748,9 @@ function SOAPNotesSection({ notes }) {
                   <div style={{
                     display: 'inline-block',
                     fontSize: 10, fontWeight: 800,
-                    color, background: `${color}15`,
-                    border: `1px solid ${color}30`,
-                    borderRadius: 3, padding: '1px 6px',
+                    color, background: `${color}12`,
+                    border: `1px solid ${color}25`,
+                    borderRadius: 4, padding: '1px 6px',
                     marginBottom: 4,
                   }}>
                     {label}
@@ -817,17 +773,16 @@ function SOAPNotesSection({ notes }) {
 const CHART_SERIES = [
   { key: 'readmission_rate_30d',       label: '30d Readmit %',   color: C.red,    axis: 'L' },
   { key: 'medication_error_rate',       label: 'Med Error /1k',   color: C.orange, axis: 'L' },
-  { key: 'handoff_documentation_score', label: 'Handoff Score',   color: C.blue,   axis: 'R' },
+  { key: 'handoff_documentation_score', label: 'Handoff Score',   color: C.accent, axis: 'R' },
 ]
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
     <div style={{
-      background: '#ffffff',
-      border: `1px solid ${C.border}`,
-      borderRadius: 4, padding: '10px 14px',
-      fontSize: 12, minWidth: 160, boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+      ...glass(),
+      padding: '10px 14px',
+      fontSize: 12, minWidth: 160,
     }}>
       <div style={{ color: C.txt1, fontWeight: 600, marginBottom: 6 }}>{label}</div>
       {payload.map(p => (
@@ -845,16 +800,15 @@ function MetricsTrend({ metrics, currentMonth }) {
 
   return (
     <div style={{
-      background: C.card, border: `1px solid ${C.border}`,
-      borderRadius: 4, padding: 22, marginBottom: 20,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      ...glass(),
+      padding: 22, marginBottom: 20,
     }}>
       <SectionLabel>6-Month EMR Trend</SectionLabel>
 
       <div style={{ display: 'flex', gap: 18, marginBottom: 16, flexWrap: 'wrap' }}>
         {CHART_SERIES.map(s => (
           <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 14, height: 3, background: s.color, borderRadius: 2 }} />
+            <div style={{ width: 14, height: 3, background: s.color, borderRadius: 2, boxShadow: `0 0 6px ${s.color}50` }} />
             <span style={{ fontSize: 11, color: C.txt3 }}>{s.label}</span>
           </div>
         ))}
@@ -862,15 +816,15 @@ function MetricsTrend({ metrics, currentMonth }) {
 
       <ResponsiveContainer width="100%" height={220}>
         <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.08)" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
           <XAxis dataKey="label" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis yAxisId="L" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[0, 30]} width={32} />
           <YAxis yAxisId="R" orientation="right" tick={{ fill: C.txt3, fontSize: 11 }} axisLine={false} tickLine={false} domain={[50, 100]} width={36} />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine yAxisId="L" y={15} stroke="rgba(218,30,40,0.4)" strokeDasharray="4 4" />
+          <ReferenceLine yAxisId="L" y={15} stroke="rgba(239,68,68,0.4)" strokeDasharray="4 4" />
           <Line yAxisId="L" type="monotone" dataKey="readmission_rate_30d" stroke={C.red} strokeWidth={2} dot={false} />
           <Line yAxisId="L" type="monotone" dataKey="medication_error_rate" stroke={C.orange} strokeWidth={2} dot={false} />
-          <Line yAxisId="R" type="monotone" dataKey="handoff_documentation_score" stroke={C.blue} strokeWidth={2} dot={false} />
+          <Line yAxisId="R" type="monotone" dataKey="handoff_documentation_score" stroke={C.accent} strokeWidth={2} dot={false} />
         </ComposedChart>
       </ResponsiveContainer>
       <div style={{ fontSize: 10, color: C.txt4, marginTop: 6 }}>
@@ -888,34 +842,34 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, on
       <button
         onClick={onBack}
         style={{
-          background: 'none', border: `1px solid ${C.border}`,
-          color: C.txt3, borderRadius: 8, padding: '7px 16px',
+          background: 'none', border: `1px solid ${C.glassBorder}`,
+          color: C.txt3, borderRadius: 10, padding: '7px 16px',
           cursor: 'pointer', fontSize: 13, marginBottom: 28,
           display: 'inline-flex', alignItems: 'center', gap: 7,
-          transition: 'all 0.15s',
+          transition: 'all 0.2s',
         }}
-        onMouseEnter={e => { e.currentTarget.style.color = C.txt1; e.currentTarget.style.borderColor = C.blue }}
-        onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.border }}
+        onMouseEnter={e => { e.currentTarget.style.color = C.txt1; e.currentTarget.style.borderColor = C.accent }}
+        onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.glassBorder }}
       >
         ← Back to Dashboard
       </button>
 
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
-          <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
-            AI Analysis · {MONTH_FULL[currentMonth]} 2026
+          <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+            AI Analysis &middot; {MONTH_FULL[currentMonth]} 2026
           </div>
           {onRefresh && (
             <button
               onClick={onRefresh}
               style={{
-                background: 'none', border: `1px solid ${C.border}`,
-                borderRadius: 4, padding: '4px 12px',
+                background: 'none', border: `1px solid ${C.glassBorder}`,
+                borderRadius: 8, padding: '4px 12px',
                 fontSize: 11, color: C.txt3, cursor: 'pointer',
-                transition: 'all 0.15s',
+                transition: 'all 0.2s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.color = C.blue; e.currentTarget.style.borderColor = C.blue }}
-              onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.border }}
+              onMouseEnter={e => { e.currentTarget.style.color = C.accent; e.currentTarget.style.borderColor = C.accent }}
+              onMouseLeave={e => { e.currentTarget.style.color = C.txt3; e.currentTarget.style.borderColor = C.glassBorder }}
             >
               ↻ Refresh Analysis
             </button>
@@ -926,10 +880,9 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, on
         </h1>
 
         <div style={{
-          background: C.card, border: `1px solid ${C.border}`,
-          borderRadius: 4, padding: '20px 24px',
+          ...glass(),
+          padding: '20px 24px',
           fontSize: 14, color: C.txt2, lineHeight: 1.8,
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
         }}>
           {analysis.risk_summary}
         </div>
@@ -944,7 +897,7 @@ function DepartmentDetail({ analysis, metrics, soapNotes, benchmarks, onBack, on
       <SOAPNotesSection notes={soapNotes} />
 
       <div style={{ marginTop: 8 }}>
-        <SectionLabel>CE Recommendations · {analysis.recommendations.length} items</SectionLabel>
+        <SectionLabel>CE Recommendations &middot; {analysis.recommendations.length} items</SectionLabel>
         {[...analysis.recommendations]
           .sort((a, b) => b.urgency_score - a.urgency_score)
           .map((rec, i) => <CECard key={i} rec={rec} />)
@@ -962,7 +915,7 @@ const ANALYSIS_STEPS = [
   { label: 'Identifying handoff quality trends', delay: 7000 },
   { label: 'Cross-referencing readmission data', delay: 12000 },
   { label: 'Applying seasonal risk overlay', delay: 18000 },
-  { label: 'Generating CE recommendations via watsonx.ai', delay: 25000 },
+  { label: 'Generating CE recommendations via Claude', delay: 25000 },
 ]
 
 function AnalysisLoadingView({ departmentName }) {
@@ -979,19 +932,18 @@ function AnalysisLoadingView({ departmentName }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: 'calc(100vh - 60px)', gap: 32, padding: 28,
+      height: 'calc(100vh - 64px)', gap: 32, padding: 28,
     }}>
       <div style={{ textAlign: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 11, color: C.blue, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
           Generating Analysis
         </div>
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: C.txt1 }}>{departmentName}</h2>
       </div>
 
       <div style={{
-        background: C.card, border: `1px solid ${C.border}`, borderRadius: 8,
+        ...glass(),
         padding: '28px 36px', width: '100%', maxWidth: 480,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
         {ANALYSIS_STEPS.map((step, i) => {
           const done = i < activeStep
@@ -1006,16 +958,16 @@ function AnalysisLoadingView({ departmentName }) {
               <div style={{
                 width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: done ? `${C.green}15` : current ? C.blueDim : 'transparent',
-                border: `2px solid ${done ? C.green : current ? C.blue : C.border}`,
+                background: done ? `${C.green}15` : current ? C.accentDim : 'transparent',
+                border: `2px solid ${done ? C.green : current ? C.accent : C.glassBorder}`,
                 transition: 'all 0.3s',
               }}>
                 {done ? (
                   <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>✓</span>
                 ) : current ? (
-                  <Spinner size={10} color={C.blue} />
+                  <Spinner size={10} color={C.accent} />
                 ) : (
-                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.border }} />
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.glassBorder }} />
                 )}
               </div>
               <span style={{
@@ -1023,15 +975,15 @@ function AnalysisLoadingView({ departmentName }) {
                 fontWeight: current ? 600 : 400,
                 transition: 'all 0.3s',
               }}>
-                {step.label}{current ? '…' : ''}
+                {step.label}{current ? '...' : ''}
               </span>
             </div>
           )
         })}
       </div>
 
-      <div style={{ fontSize: 12, color: C.txt4, textAlign: 'center' }}>
-        IBM watsonx.ai · Llama 3.3 70B Instruct
+      <div style={{ fontSize: 12, color: C.accent, textAlign: 'center', fontWeight: 500, opacity: 0.7 }}>
+        Claude Sonnet &middot; Anthropic
       </div>
     </div>
   )
@@ -1043,10 +995,10 @@ function LoadingScreen() {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: 'calc(100vh - 60px)', gap: 16,
+      height: 'calc(100vh - 64px)', gap: 16,
     }}>
       <Spinner size={40} />
-      <div style={{ color: C.txt3, fontSize: 14 }}>Connecting to ClearPath backend…</div>
+      <div style={{ color: C.txt3, fontSize: 14 }}>Connecting to ClearPath backend...</div>
     </div>
   )
 }
@@ -1055,11 +1007,12 @@ function ErrorScreen({ message }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      height: 'calc(100vh - 60px)',
+      height: 'calc(100vh - 64px)',
     }}>
       <div style={{
-        background: C.card, border: `1px solid ${C.red}40`,
-        borderRadius: 12, padding: 36, maxWidth: 420, textAlign: 'center',
+        ...glass(),
+        border: `1px solid ${C.red}30`,
+        padding: 36, maxWidth: 420, textAlign: 'center',
       }}>
         <div style={{ fontSize: 36, marginBottom: 14 }}>!</div>
         <div style={{ fontSize: 15, fontWeight: 600, color: C.red, marginBottom: 8 }}>Connection Error</div>
@@ -1145,7 +1098,6 @@ export default function App() {
   async function handleAnalyze(deptId, forceRefresh = false) {
     const cacheKey = `${deptId}_${currentMonth}`
 
-    // Use cache if available and not forcing refresh
     if (!forceRefresh && analysisCache[cacheKey]) {
       setSelected({
         analysis: analysisCache[cacheKey],
@@ -1191,9 +1143,9 @@ export default function App() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: C.bg,
+      background: 'transparent',
       color: C.txt1,
-      fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     }}>
       <Header onDashboard={() => setView('dashboard')} />
 
