@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 MODEL_ID = "claude-sonnet-4-20250514"
 
 MONTH_NAMES = {
@@ -227,9 +226,10 @@ def analyze_department(
     Returns a dict with keys: recommendations, risk_summary, causal_chain.
     Raises RuntimeError with a descriptive message on failure.
     """
-    if not ANTHROPIC_API_KEY:
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
         raise RuntimeError(
-            "Missing Anthropic API key. Set ANTHROPIC_API_KEY in your .env file."
+            "Missing Anthropic API key. Set ANTHROPIC_API_KEY in your environment variables."
         )
 
     try:
@@ -240,7 +240,7 @@ def analyze_department(
         ) from exc
 
     try:
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        client = anthropic.Anthropic(api_key=api_key)
 
         system_prompt, user_message = _build_prompt(
             department_name, department_data, seasonal_data, current_month,
