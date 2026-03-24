@@ -8,16 +8,46 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Page backdrop — synced with React `data-theme` on <html> (default lite) */
+/*
+ * Lite theme: paint html, body, and #root so backdrop-filter on glass panels
+ * always samples a light surface (transparent chains + OS dark mode can read as black).
+ */
+html[data-theme="lite"] {
+  color-scheme: light;
+  background-color: #e4e9f2;
+}
+
 html[data-theme="lite"] body {
-  background:
+  background-color: #e4e9f2;
+  background-image:
     radial-gradient(1200px 800px at 12% -10%, rgba(255, 180, 140, 0.22), transparent 55%),
     radial-gradient(900px 600px at 88% 0%, rgba(120, 160, 255, 0.14), transparent 50%),
     linear-gradient(145deg, #e8ecf4 0%, #dce3f0 42%, #eef1f8 100%);
+  background-attachment: fixed;
+}
+
+html[data-theme="lite"] #root {
+  min-height: 100vh;
+  background-color: #e4e9f2;
+  background-image:
+    radial-gradient(1200px 800px at 12% -10%, rgba(255, 180, 140, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 88% 0%, rgba(120, 160, 255, 0.14), transparent 50%),
+    linear-gradient(145deg, #e8ecf4 0%, #dce3f0 42%, #eef1f8 100%);
+  background-attachment: fixed;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  background-color: #0a0a0f;
 }
 
 html[data-theme="dark"] body {
   background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0d0d14 100%);
+}
+
+html[data-theme="dark"] #root {
+  min-height: 100vh;
+  background: transparent;
 }
 
 ::-webkit-scrollbar { width: 6px; }

@@ -91,7 +91,7 @@ function makeGlass(C, theme, extra = {}) {
     ? 'blur(40px) saturate(1.75)'
     : 'blur(36px) saturate(2) brightness(1.14)'
   const bg = lite
-    ? 'linear-gradient(168deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.38) 38%, rgba(255,255,255,0.14) 72%, rgba(255,255,255,0.06) 100%)'
+    ? 'linear-gradient(168deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.62) 35%, rgba(255,255,255,0.42) 68%, rgba(255,255,255,0.32) 100%)'
     : 'linear-gradient(165deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.05) 42%, rgba(255,255,255,0.02) 68%, rgba(255,255,255,0.008) 100%)'
   const border = lite
     ? '1px solid rgba(255,255,255,0.88)'
@@ -399,7 +399,7 @@ function DepartmentCard({ dept, metrics, benchmarks, onAnalyze, analyzing, curre
   const score = metrics ? computeRiskScore(metrics, currentMonth, benchmarks) : null
   const m = metrics?.find(r => r.month === currentMonth)
   const hoverGlass = theme === 'lite'
-    ? 'linear-gradient(168deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.52) 40%, rgba(255,255,255,0.24) 100%)'
+    ? 'linear-gradient(168deg, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.68) 40%, rgba(255,255,255,0.46) 100%)'
     : 'linear-gradient(165deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.05) 100%)'
 
   return (
@@ -1254,7 +1254,9 @@ export default function App() {
     <ThemeContext.Provider value={themeCtx}>
       <div style={{
         minHeight: '100vh',
-        background: 'transparent',
+        background: theme === 'lite'
+          ? 'linear-gradient(145deg, #e8ecf4 0%, #dce3f0 42%, #eef1f8 100%)'
+          : 'transparent',
         color: C.txt1,
         fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       }}>
