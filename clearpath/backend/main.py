@@ -52,7 +52,8 @@ def chat_token():
 
 @app.get("/", tags=["health"])
 def health_check():
-    return {"status": "ok", "service": "ClearPath API", "timestamp": datetime.now(timezone.utc).isoformat()}
+    has_key = bool(os.getenv("ANTHROPIC_API_KEY"))
+    return {"status": "ok", "service": "ClearPath API", "has_anthropic_key": has_key, "timestamp": datetime.now(timezone.utc).isoformat()}
 
 
 @app.get("/departments", tags=["departments"])
