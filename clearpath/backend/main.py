@@ -10,11 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from data import DEPARTMENTS, EMR_DATA, BENCHMARKS, SOAP_NOTES, BEST_PRACTICE_REFERENCES, get_all_months_for_department, get_department_metrics
 from models import AnalysisRequest, AnalysisResponse, CERecommendation, DepartmentMetrics, SOAPNote, Benchmark
 from seasonal import get_seasonal_risks_for_month
-from watson import analyze_department
+from claude_client import analyze_department
 
 app = FastAPI(
     title="ClearPath API",
-    description="AI-powered nursing CE recommendation engine backed by IBM watsonx.ai",
+    description="AI-powered nursing CE recommendation engine backed by Anthropic Claude",
     version="0.1.0",
 )
 
@@ -131,7 +131,7 @@ def get_references():
 def analyze(request: AnalysisRequest):
     """
     Analyze a department's EMR data for the given month and return AI-generated
-    CE recommendations powered by IBM watsonx.ai (Llama 3.3 70B).
+    CE recommendations powered by Anthropic Claude.
     """
     department_id = request.department_id
     current_month = request.current_month
